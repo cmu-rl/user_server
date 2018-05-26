@@ -14,7 +14,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         socket = self.request[1]
 
         try:
-            request = json.loads(data)
+            request = json.loads(data,encoding="utf-8")
         except ValueError as error:
             #TODO return error
             return
