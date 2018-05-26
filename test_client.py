@@ -1,5 +1,6 @@
 import sys
 import json
+import time
 import socket
 
 
@@ -13,8 +14,12 @@ data = {}
 data['cmd'] = 'echo'
 data['useless'] = 'thisisauselessstringofinfromationthatwillberemovedinther\
     esponcebecausetheechocommandwillonlyreturnthecommandsenttotheserver'
-sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-received = str(sock.recv(1024), "utf-8")
 
-print("Sent:     {}".format(data))
-print("Received: {}".format(received))
+while True:
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
+    time.sleep(1)
