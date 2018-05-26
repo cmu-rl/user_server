@@ -33,7 +33,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 response['error'] = True
 
             # Send response
-            socket.sendto(json.dumps(response), self.client_address)
+            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
         else:
             return
 
