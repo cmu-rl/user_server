@@ -1,4 +1,5 @@
 import json
+import mySQLLib
 import socketserver
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
@@ -14,7 +15,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         socket = self.request[1]
 
         try:
-            request = json.loads(data,encoding="utf-8")
+            request = json.loads(data, encoding="utf-8")
         except ValueError as error:
             #TODO return error
             return
@@ -27,9 +28,18 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             # Form the response
             if request['cmd'] == 'echo':
                 response['cmd'] = request['cmd']
+
             elif request['cmd'] == 'list_users':
                 response['list'] = ['usr1', 'usr2']
-            else:
+
+            elif request['cmd'] == 'add_user':
+                response['status'] = 'Success'
+
+            elif request['cmd'] == 'remove_user':
+                response['status'] = 'Failure'
+                response['message'] = 'User does not exist'
+
+            else: # Default Error Response
                 response['error'] = True
 
             # Send response

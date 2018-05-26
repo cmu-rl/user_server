@@ -3,16 +3,6 @@ import time
 import datetime
 import mysql.connector
 
-
-
-
-# Remote access 
-#SERVER= '73.214.249.180'
-#PORT = 13306
-
-## Iam Specific SQLite class
-#    
-# 
 class mySQLLib:
 
     dbUser ='alpha'
@@ -32,12 +22,12 @@ class mySQLLib:
             self.cursor = self.conn.cursor()
             return 0
         except mysql.connector.Error as e:
-            print "\tError code:", e.errno        # error number
-            print "\tSQLSTATE value:", e.sqlstate # SQLSTATE value
-            print "\tError message:", e.msg       # error message
-            print "\tError:", e                   # errno, sqlstate, msg values
+            print ("\tError code:", e.errno)        # error number
+            print ("\tSQLSTATE value:", e.sqlstate) # SQLSTATE value
+            print ("\tError message:", e.msg)       # error message
+            print ("\tError:", e)                   # errno, sqlstate, msg values
             s = str(e)
-            print "\tError:", s                   # errno, sqlstate, msg values
+            print ("\tError:", s)                   # errno, sqlstate, msg values
             self.conn = None
             self.cursor = None
             return e.errno
@@ -46,18 +36,18 @@ class mySQLLib:
     # This may be a mySQL specific thing
     # The primary use is for creating databases that don't exist on the server
     def Connect(self):
-        print "Connecting to server"
+        print ("Connecting to server")
         try:
             self.conn = mysql.connector.connect(user=self.dbUser, password=self.dbPasswd, host=self.dbServer,buffered=True)
             self.cursor = self.conn.cursor()
             return 0
         except mysql.connector.Error as e:
-            print "\tError code:", e.errno        # error number
-            print "\tSQLSTATE value:", e.sqlstate # SQLSTATE value
-            print "\tError message:", e.msg       # error message
-            print "\tError:", e                   # errno, sqlstate, msg values
+            print ("\tError code:", e.errno)        # error number
+            print ("\tSQLSTATE value:", e.sqlstate) # SQLSTATE value
+            print ("\tError message:", e.msg)       # error message
+            print ("\tError:", e)                   # errno, sqlstate, msg values
             s = str(e)
-            print "\tError:", s                   # errno, sqlstate, msg values
+            print ("\tError:", s)                  # errno, sqlstate, msg values
             self.conn = None
             self.cursor = None
             return e.errno        
@@ -156,7 +146,7 @@ class mySQLLib:
             cur= self.conn.cursor()
             cur.execute ("SELECT minecraftKey FROM player WHERE uid='%d'"%(int(uid)))
             #for row in cur:
-            #    print 'Row:',row[0]
+            #    print ('Row:',row[0]
             key = cur.fetchone()
             cur.close()
             return key
@@ -199,7 +189,7 @@ class mySQLLib:
             cur= self.conn.cursor()
             cur.execute ("SELECT firehoseKey FROM player WHERE uid='%d'"%(int(uid)))
             #for row in cur:
-            #    print 'Row:',row[0]
+            #    print ('Row:',row[0])
             key = cur.fetchone()
             cur.close()
             return key
@@ -255,16 +245,16 @@ class mySQLLib:
 if __name__ == '__main__':    
     playerDB = mySQLLib ()
     playerDB.Open("player_database")
-    print playerDB.listUsers()
+    print (playerDB.listUsers())
     playerDB.addUser('ricky.houghton@gmail.com','mountainBiker',2345)
-    print playerDB.listUsers()
+    print (playerDB.listUsers())
 
-    print 'Minecraft Key via UID               ',playerDB.getMinecraftKeyViaUID('1234')
-    print 'Minecraft Key via email             ',playerDB.getMinecraftKeyViaEmail('imushroom1@gmail.com')
-    print 'Minecraft Key via minecraft username',playerDB.getMinecraftKeyViaMinecraftUsername('imushroom1')
-    print 'Firehose Key via UID                ',playerDB.getFirehoseKeyViaUID('1234')
-    print 'Firehose Key via email              ',playerDB.getFirehoseKeyViaEmail('imushroom1@gmail.com')
-    print 'Firehose Key via minecraft username ',playerDB.getFirehoseKeyViaMinecraftUsername('imushroom1')
+    print ('Minecraft Key via UID               ',playerDB.getMinecraftKeyViaUID('1234'))
+    print ('Minecraft Key via email             ',playerDB.getMinecraftKeyViaEmail('imushroom1@gmail.com'))
+    print ('Minecraft Key via minecraft username',playerDB.getMinecraftKeyViaMinecraftUsername('imushroom1'))
+    print ('Firehose Key via UID                ',playerDB.getFirehoseKeyViaUID('1234'))
+    print ('Firehose Key via email              ',playerDB.getFirehoseKeyViaEmail('imushroom1@gmail.com'))
+    print ('Firehose Key via minecraft username ',playerDB.getFirehoseKeyViaMinecraftUsername('imushroom1'))
 
     playerDB.setMinecraftKeyViaUID(2345,'mnopqrstuv')
     playerDB.setMinecraftKeyViaMinecraftUsername('mountainBiker','stopit')
