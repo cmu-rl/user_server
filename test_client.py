@@ -16,7 +16,7 @@ data['useless'] = 'thisisauselessstringofinfromationthatwillberemovedinther\
     esponcebecausetheechocommandwillonlyreturnthecommandsenttotheserver'
 
 while True:
-    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    sock.sendto(json.dumps(data), (HOST, PORT))
     received = str(sock.recv(1024), "utf-8")
 
     print("Sent:     {}".format(data))
