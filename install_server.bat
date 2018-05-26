@@ -1,0 +1,1 @@
+echo "start on runlevel [2345]\nstop on runlevel [!2345]\nexec ~/user_server/user_server.py" >> /etc/init/runServerOnStartup.conf
