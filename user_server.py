@@ -5,10 +5,6 @@ import string
 import mySQLLib
 import socketserver
 
-#TODO Use config file for keys
-AWS_ACCESS_KEY = AKIAI62AJGHAKX7LJHAQ
-AWS_SECRET_KEY = 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   
-
 def generateUserID(minecraftID):
     return hash(minecraftID)
 
@@ -77,16 +73,20 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 minecraft_key = generateSecureString(45)
                 if 'uid' in request:
                     playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                    response['minecraft_key'] = minecraft_key
                 elif 'mcusername' in request:
                     playerDB.setMinecraftKeyViaMinecraftUsername(request['mcusername'], minecraft_key)
+                    response['minecraft_key'] = minecraft_key
                 elif 'email' in request: 
                     playerDB.setMinecraftKeyViaEmail(request['email'], minecraft_key)
+                    response['minecraft_key'] = minecraft_key
                 else:
                     response['status'] = 'Failed'
                     response['message'] = 'Request needs one of [uid, mcusername, email]'
 
             ########        Get FireHose Key        ########
             elif request['cmd'] == 'get_firehose_key':
+                # TODO Check if UID is valid
                 # Determine user's UID if not given
                 if 'uid' in request:
                     uid = request['uid']
@@ -94,8 +94,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     uid = playerDB.getUIDViaMinecraftUsername(request['mcusername'])
                 elif 'email' in request:
                     uid = playerDB.getUIDViaEmail(request['email'])
-                else
+                else:
                     uid = None
+
+                #TODO Check if user has a key allready
+                #TODO Beta Make key active if exits
 
                 if not uid is None:
                     # Create AWS UserName
@@ -106,7 +109,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     
                     # Retrive User
                     iam = boto3.resource('iam')
-                    user = iam.user(UserName=username)
+                    user = iam.User(username)
 
                     # Add them to firehose_restricted security group
                     user.add_group(GroupName='firehose_restricted')
@@ -114,6 +117,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     access_key_pair = user.create_access_key_pair()
                 
                     playerDB.setFirehoseKeyViaUID(uid, access_key_pair.id, access_key_pair.secret)
+
+                    response['key'] = access_key_pair.id
+                    response['secret_key'] = access_key_pair.secret
 
                 else:
                     response['status'] = 'Failed'
