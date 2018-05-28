@@ -243,10 +243,10 @@ class mySQLLib:
 
 
 if __name__ == '__main__':    
-    playerDB = mySQLLib ()
+    playerDB = mySQLLib()
     playerDB.Open("player_database")
     print (playerDB.listUsers())
-    playerDB.addUser('ricky.houghton@gmail.com','mountainBiker',2345)
+    playerDB.addUser('brandon.a.houghton@gmail.com', 'mountainBiker', 2345)
     print (playerDB.listUsers())
 
     print ('Minecraft Key via UID               ',playerDB.getMinecraftKeyViaUID('1234'))
@@ -259,6 +259,6 @@ if __name__ == '__main__':
     playerDB.setMinecraftKeyViaUID(2345,'mnopqrstuv')
     playerDB.setMinecraftKeyViaMinecraftUsername('mountainBiker','stopit')
 
-    playerDB.deleteUser('ricky.houghton@gmail.com')
+    playerDB.deleteUser('brandon.a.houghton@gmail.com')
 
     playerDB.Close()

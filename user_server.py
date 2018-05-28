@@ -1,6 +1,14 @@
 import json
+import random
+import string
 import mySQLLib
 import socketserver
+
+def generateUserID(minecraftID):
+    return hash(minecraftID)
+
+def generateSecureString(len):
+    return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -22,27 +30,77 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         
         if 'cmd' in request:
             response = {}
-
-            print(request['cmd'])
-
+            
             # Form the response
             if request['cmd'] == 'echo':
                 response['cmd'] = request['cmd']
 
             elif request['cmd'] == 'list_users':
-                response['list'] = ['usr1', 'usr2']
+                playerDB = mySQLLib.mySQLLib()
+                playerDB.Open("player_database")
+                response['list'] = playerDB.listUsers()
 
+            ########           Add User          ########  
             elif request['cmd'] == 'add_user':
-                response['status'] = 'Success'
+                if 'email' in request and 'mcusername' in request:
+                    playerDB.addUser( \
+                        request['email'],
+                        request['mcusername'],
+                        generateUserID(request['mcusername']))
+                    response['status'] = 'Success'
+                else:    
+                    response['status'] = 'Failed'
+                    response['message'] = 'Required fields not populated, must supply email and mcusername'
 
+            ########           Remove User          ########
             elif request['cmd'] == 'remove_user':
-                response['status'] = 'Failure'
-                response['message'] = 'User does not exist'
+                if 'uid' in request: 
+                    playerDB.deleteUserViaUID(request['uid'])
+                    response['status'] = 'Success'
+                elif 'mcusername' in request:
+                    playerDB.deleteUserViaEmail(request['email'])
+                    response['status'] = 'Success'
+                elif 'email' in request:
+                    playerDB.deleteUserViaEmail(request['email'])
+                    response['status'] = 'Success'
+                else:
+                    response['status'] = 'Failure'
+                    response['message'] = 'Request needs one of uid, mcusername, email'
 
-            else: # Default Error Response
+            ########           Get MC Key           ########
+            elif request['cmd'] == 'get_minecraft_key':
+                minecraft_key = generateSecureString(45)
+                if 'uid' in request:
+                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                elif 'mcusername' in request:
+                    playerDB.setMinecraftKeyViaMinecraftUsername(request['mcusername'], minecraft_key)
+                elif 'email' in request: 
+                    playerDB.setMinecraftKeyViaMinecraftUsername(request['email'], minecraft_key)
+                else:
+                    response['status'] = 'Failed'
+                    response['message'] = 'Request needs one of [uid, mcusername, email]'
+
+            ########        Get FireHose Key        ########
+            elif request['cmd'] == 'get_firehose_key':
+                #TODO generate true AWS IAM access token for firehose
+                firehose_key = generateSecureString(45)
+                if 'uid' in request:
+                    playerDB.setFirehoseKeyViaUID(request['uid'], firehose_key)
+                elif 'mcusername' in request:
+                    playerDB.setFirehoseKeyViaMinecraftUsername(request['mcusername'], firehose_key)
+                elif 'email' in request: 
+                    playerDB.setFirehoseKeyViaEmail(request['email'], firehose_key)
+                else:
+                    response['status'] = 'Failed'
+                    response['message'] = 'Request needs one of uid, mcusername, email'
+
+
+            ########          Default Error          ########
+            else:
                 response['error'] = True
+                response['status'] = 'Failed'
 
-            # Send response
+            ###    Send response    ###
             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
         else:
             return
