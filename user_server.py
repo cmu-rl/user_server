@@ -1,8 +1,13 @@
+import boto3
 import json
 import random
 import string
 import mySQLLib
 import socketserver
+
+#TODO Use config file for keys
+AWS_ACCESS_KEY = AKIAI62AJGHAKX7LJHAQ
+AWS_SECRET_KEY = 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   
 
 def generateUserID(minecraftID):
     return hash(minecraftID)
@@ -75,21 +80,41 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 elif 'mcusername' in request:
                     playerDB.setMinecraftKeyViaMinecraftUsername(request['mcusername'], minecraft_key)
                 elif 'email' in request: 
-                    playerDB.setMinecraftKeyViaMinecraftUsername(request['email'], minecraft_key)
+                    playerDB.setMinecraftKeyViaEmail(request['email'], minecraft_key)
                 else:
                     response['status'] = 'Failed'
                     response['message'] = 'Request needs one of [uid, mcusername, email]'
 
             ########        Get FireHose Key        ########
             elif request['cmd'] == 'get_firehose_key':
-                #TODO generate true AWS IAM access token for firehose
-                firehose_key = generateSecureString(45)
+                # Determine user's UID if not given
                 if 'uid' in request:
-                    playerDB.setFirehoseKeyViaUID(request['uid'], firehose_key)
+                    uid = request['uid']
                 elif 'mcusername' in request:
-                    playerDB.setFirehoseKeyViaMinecraftUsername(request['mcusername'], firehose_key)
-                elif 'email' in request: 
-                    playerDB.setFirehoseKeyViaEmail(request['email'], firehose_key)
+                    uid = playerDB.getUIDViaMinecraftUsername(request['mcusername'])
+                elif 'email' in request:
+                    uid = playerDB.getUIDViaEmail(request['email'])
+                else
+                    uid = None
+
+                if not uid is None:
+                    # Create AWS UserName
+                    username = 'mc_client_' + str(uid)
+                    # Generate IAM User
+                    client = boto3.client('iam')
+                    client.create_user(Path='/players/',UserName=username)
+                    
+                    # Retrive User
+                    iam = boto3.resource('iam')
+                    user = iam.user(UserName=username)
+
+                    # Add them to firehose_restricted security group
+                    user.add_group(GroupName='firehose_restricted')
+                    # Generate key pair for user 
+                    access_key_pair = user.create_access_key_pair()
+                
+                    playerDB.setFirehoseKeyViaUID(uid, access_key_pair.id, access_key_pair.secret)
+
                 else:
                     response['status'] = 'Failed'
                     response['message'] = 'Request needs one of uid, mcusername, email'
@@ -98,7 +123,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########          Default Error          ########
             else:
                 response['error'] = True
-                response['status'] = 'Failed'
+                response['status'] = 'Failed, cmd not understood'
 
             ###    Send response    ###
             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
