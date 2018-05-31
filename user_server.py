@@ -2,11 +2,13 @@ import boto3
 import json
 import random
 import string
+import hashlib
+import datetime
 import mySQLLib
 import socketserver
 
 def generateUserID(minecraftID):
-    return hash(minecraftID)
+    return hashlib.md5(minecraftID.encode('utf-8')).hexdigest()
 
 def generateSecureString(len):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
@@ -43,18 +45,22 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
+                # TODO check if they exist but are 'removed' or 'banned', etc.
                 if 'email' in request and 'mcusername' in request:
+                    uid = generateUserID(request['mcusername'])
                     playerDB.addUser( \
                         request['email'],
                         request['mcusername'],
-                        generateUserID(request['mcusername']))
+                        uid)
                     response['status'] = 'Success'
+                    response['uid'] = uid
                 else:    
                     response['status'] = 'Failed'
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
 
             ########           Remove User          ########
             elif request['cmd'] == 'remove_user':
+                # TODO Remove user by marking them as removed (not deleting them)
                 if 'uid' in request: 
                     playerDB.deleteUserViaUID(request['uid'])
                     response['status'] = 'Success'
@@ -74,56 +80,61 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 if 'uid' in request:
                     playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
-                elif 'mcusername' in request:
-                    playerDB.setMinecraftKeyViaMinecraftUsername(request['mcusername'], minecraft_key)
-                    response['minecraft_key'] = minecraft_key
-                elif 'email' in request: 
-                    playerDB.setMinecraftKeyViaEmail(request['email'], minecraft_key)
-                    response['minecraft_key'] = minecraft_key
                 else:
                     response['status'] = 'Failed'
-                    response['message'] = 'Request needs one of [uid, mcusername, email]'
+                    response['message'] = 'Request needs valid uid'
 
             ########        Get FireHose Key        ########
             elif request['cmd'] == 'get_firehose_key':
-                # TODO Check if UID is valid
-                # Determine user's UID if not given
+                # TODO Check if UID is valid                
+                # TODO Check if user has a key allready
+
                 if 'uid' in request:
+
                     uid = request['uid']
-                elif 'mcusername' in request:
-                    uid = playerDB.getUIDViaMinecraftUsername(request['mcusername'])
-                elif 'email' in request:
-                    uid = playerDB.getUIDViaEmail(request['email'])
-                else:
-                    uid = None
 
-                #TODO Check if user has a key allready
-                #TODO Beta Make key active if exits
-
-                if not uid is None:
-                    # Create AWS UserName
-                    username = 'mc_client_' + str(uid)
-                    # Generate IAM User
-                    client = boto3.client('iam')
-                    client.create_user(Path='/players/',UserName=username)
-                    
-                    # Retrive User
-                    iam = boto3.resource('iam')
-                    user = iam.User(username)
-
-                    # Add them to firehose_restricted security group
-                    user.add_group(GroupName='firehose_restricted')
-                    # Generate key pair for user 
-                    access_key_pair = user.create_access_key_pair()
+                    sts = boto3.client('sts')
                 
-                    playerDB.setFirehoseKeyViaUID(uid, access_key_pair.id, access_key_pair.secret)
+                    # Get Session Token via AssumeRole
+                    sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
+                    role = sts.assume_role(RoleArn='arn:aws:iam::058861212628:role/iam_client_streamer', RoleSessionName=sessionName)
 
-                    response['key'] = access_key_pair.id
-                    response['secret_key'] = access_key_pair.secret
+                    print (role)
+                    credentials = role['Credentials']
+
+                    # Open FireHose Stream with key
+                    firehoseClient = boto3.client('firehose', region_name='us-east-1')
+
+                    # the role for firehose needs to have access to S3 - make policy that includes this
+                    roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
+                    bucketARN = 'arn:aws:s3:::rickyfubar'
+
+                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.date.today().strftime("_%H_%M_%S")   
+                    try:
+                        createdFirehose = firehoseClient.create_delivery_stream(
+                            DeliveryStreamName = firehoseStreamName,
+                            S3DestinationConfiguration = {
+                                'RoleARN': roleARN,
+                                'BucketARN': bucketARN
+                            })
+                    except Exception as E:
+                        print (E)
+                        return
+
+                    # Record stream and session id in database
+                    playerDB = mySQLLib.mySQLLib()
+                    # playerDB.setFirehoseKeyViaUID(uid, credentials.id, credentials.secret, credentials.sess)
+
+                    # Send access tokens to requestor
+                    response['stream_name'] = firehoseStreamName
+                    response['access_key'] = credentials['AccessKeyId']
+                    response['secret_key'] = credentials['SecretAccessKey']
+                    response['session_token'] = credentials['SessionToken']
+                    #response['expiration'] = credentials['Expiration']
 
                 else:
                     response['status'] = 'Failed'
-                    response['message'] = 'Request needs one of uid, mcusername, email'
+                    response['message'] = 'Request needs valid uid'
 
 
             ########          Default Error          ########
