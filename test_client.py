@@ -5,7 +5,7 @@ import socket
 import hashlib
 
 
-HOST, PORT = "localhost", 9999
+HOST, PORT = "174.129.148.33", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 username = '1957295fdsahjklbfdjk'
 email = 'tsyhfndasklfds@dsalkbga.com'

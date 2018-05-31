@@ -38,6 +38,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             if request['cmd'] == 'echo':
                 response['cmd'] = request['cmd']
 
+            #######          List Users          ########
             elif request['cmd'] == 'list_users':
                 playerDB = mySQLLib.mySQLLib()
                 playerDB.Open("player_database")
@@ -62,13 +63,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'remove_user':
                 # TODO Remove user by marking them as removed (not deleting them)
                 if 'uid' in request: 
-                    playerDB.deleteUserViaUID(request['uid'])
+                    #playerDB.deleteUserViaUID(request['uid'])
                     response['status'] = 'Success'
                 elif 'mcusername' in request:
-                    playerDB.deleteUserViaEmail(request['email'])
+                    #playerDB.deleteUserViaEmail(request['email'])
                     response['status'] = 'Success'
                 elif 'email' in request:
-                    playerDB.deleteUserViaEmail(request['email'])
+                    #playerDB.deleteUserViaEmail(request['email'])
                     response['status'] = 'Success'
                 else:
                     response['status'] = 'Failure'
@@ -78,7 +79,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'get_minecraft_key':
                 minecraft_key = generateSecureString(45)
                 if 'uid' in request:
-                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                    #playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
                 else:
                     response['status'] = 'Failed'
@@ -123,13 +124,19 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # Record stream and session id in database
                     playerDB = mySQLLib.mySQLLib()
-                    # playerDB.setFirehoseKeyViaUID(uid, credentials.id, credentials.secret, credentials.sess)
+                    # playerDB.setFirehoseKeyViaUID(
+                    #   uid, 
+                    #   credentials['AccessKeyId'], 
+                    #   credentials['SecretAccessKey'], 
+                    #   credentials['SessionToken'],
+                    #   firehoseStreamName)
 
                     # Send access tokens to requestor
                     response['stream_name'] = firehoseStreamName
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
                     response['session_token'] = credentials['SessionToken']
+                    #TODO serialize expiriation object (below)
                     #response['expiration'] = credentials['Expiration']
 
                 else:
