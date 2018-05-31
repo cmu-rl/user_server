@@ -49,10 +49,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 # TODO check if they exist but are 'removed' or 'banned', etc.
                 if 'email' in request and 'mcusername' in request:
                     uid = generateUserID(request['mcusername'])
-                    playerDB.addUser( \
-                        request['email'],
-                        request['mcusername'],
-                        uid)
+                    #playerDB.addUser( \
+                    #    request['email'],
+                    #    request['mcusername'],
+                    #    uid)
                     response['status'] = 'Success'
                     response['uid'] = uid
                 else:    
@@ -123,7 +123,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         return
 
                     # Record stream and session id in database
-                    playerDB = mySQLLib.mySQLLib()
+                    #playerDB = mySQLLib.mySQLLib()
                     # playerDB.setFirehoseKeyViaUID(
                     #   uid, 
                     #   credentials['AccessKeyId'], 

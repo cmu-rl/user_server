@@ -7,6 +7,7 @@ import hashlib
 
 HOST, PORT = "174.129.148.33", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.settimeout(10)
 username = '1957295fdsahjklbfdjk'
 email = 'tsyhfndasklfds@dsalkbga.com'
 uid = hashlib.md5(username.encode('utf-8')).hexdigest()
