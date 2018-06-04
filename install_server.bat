@@ -1,22 +1,29 @@
-#!/bin/bash/
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt-get update
-sudo apt-get install python3.6 -y
-echo 'alias python=python3.6' >> ~/.bashrc 
-source ~/.bashrc
+#!/bin/bash
+add-apt-repository ppa:deadsnakes/ppa -y
+apt-get update
+apt-get install python3.6 -y
+echo 'alias python=python3.6' >> /home/ubuntu/.bashrc 
+source /home/ubuntu/.bashrc
 
-sudo apt-get install python3-pip
+apt-get install python3-pip -y
+python3.6 -m pip install --upgrade pip
 python3.6 -m pip install mysql-connector
-sudo python3.6 -m pip install boto3
+python3.6 -m pip install boto3
 
-REM echo 'publickeyhere' > ~/.ssh/id_rsa.pub
-REM echo '-----BEGIN RSA PRIVATE KEY----------END RSA PRIVATE KEY-----' > ~/.ssh/id_rsa
+ssh-keyscan github.com >> /home/ubuntu/.ssh/known_hosts
 
-ssh-keyscan github.com >> ~/.ssh/known_hosts
-
+cd /home/ubuntu
 git clone https://github.com/cmu-rl/user_server.git
 git clone https://github.com/cmu-rl/web_server.git
 
-echo "start on runlevel [2345]\nstop on runlevel [!2345]\nexec ~/user_server/user_server.py" >> /etc/init/runServerOnStartup.conf
+chown -R ubuntu:ubuntu ./web_server/
+chown -R ubuntu:ubuntu ./user_server/
 
-sudo reboot now
+echo "#!/bin/sh -e" >> ./tmp
+echo "/usr/bin/python3.6 /home/ubuntu/user_server/user_server.py" >> ./tmp
+echo "exit 0" >> ./tmp
+chmod +x ./tmp
+rm /etc/rc.local
+mv ./tmp /etc/rc.local
+
+reboot now
