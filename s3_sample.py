@@ -46,13 +46,14 @@ import time
 #       (http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
 
 # Get Session Credentials
-HOST, PORT = "localhost", 9999
+HOST, PORT = "18.206.147.166", 9999
 
 data = {}
 data['cmd'] = 'get_firehose_key'
 data['uid'] = '0123456789'
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.settimeout(2)
 sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
 received = str(sock.recv(1024), "utf-8")
 
