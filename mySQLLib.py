@@ -17,7 +17,7 @@ class mySQLLib:
 
     dbUser ='alpha'
     dbPasswd = 'alphapassword'
-    dbServer = 'cmu-rl-sql.c8vu3k6fjdll.us-east-1.rds.amazonaws.com'
+    dbServer = 'cmu-rl.c2gld0sydy91.us-east-1.rds.amazonaws.com'
     dbPort = 3306
 
     ## The constructor
@@ -86,7 +86,7 @@ class mySQLLib:
             minecraftUsernames = []
 
             cur = self.conn.cursor()
-            cur.execute("SELECT minecraftUsername FROM player ORDER by id") # We aren't achieving sorting as expected- why is this?
+            cur.execute("SELECT minecraftUsername FROM user_table ORDER by id") # We aren't achieving sorting as expected- why is this?
             for row in cur:
                 minecraftUsernames.append(row[0])
             return minecraftUsernames
@@ -100,7 +100,7 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("INSERT INTO player (email,minecraftUsername,uid) VALUES(%s,%s,%s)",(email,minecraftUsername,int(uid),))
+                cur.execute ("INSERT INTO user_table (email,minecraftUsername,uid) VALUES(%s,%s,%s)",(email,minecraftUsername,uid,))
                 self.conn.commit()
             except:
                 # Error
@@ -108,7 +108,7 @@ class mySQLLib:
             cur.close()
 
     # Deletes a user from the database
-    # No error checking - throws exception if user already exists
+    # No error checking - throws exception if user does not exist
     def deleteUserviaEmail(self,value):
         if self.conn is None:
             # error
@@ -116,7 +116,7 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("DELETE FROM player WHERE email='%s'"%(value))
+                cur.execute ("DELETE FROM user_table WHERE email='%s'"%(value))
                 self.conn.commit()
             except:
                 # Error
@@ -124,7 +124,7 @@ class mySQLLib:
             cur.close()
 
     # Deletes a user from the database
-    # No error checking - throws exception if user already exists
+    # No error checking - throws exception if user does not exist
     def deleteUserviaMinecraftUsername(self,value):
         if self.conn is None:
             # error
@@ -132,7 +132,7 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("DELETE FROM player WHERE minecraftUsername='%s'"%(value))
+                cur.execute ("DELETE FROM user_table WHERE minecraftUsername='%s'"%(value))
                 self.conn.commit()
             except:
                 # Error
@@ -152,7 +152,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET minecraftKey='%s' WHERE uid='%d'" % (key,int(uid),))
+            cur.execute ("UPDATE user_table SET minecraftKey='%s' WHERE uid='%s'" % (key, uid,))
             self.conn.commit()
             cur.close()
 
@@ -163,7 +163,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET minecraftKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
+            cur.execute ("UPDATE user_table SET minecraftKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
             self.conn.commit()
             cur.close()
 
@@ -174,10 +174,13 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT minecraftKey FROM player WHERE uid='%d'"%(int(uid)))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT minecraftKey FROM user_table WHERE uid='%s'"%(uid))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:                 
+                return None             
+            else:                 
+                return key[0]
 
     # Get minecraft Key with email address
     def getMinecraftKeyViaEmail(self,email):
@@ -186,10 +189,13 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT minecraftKey FROM player WHERE email='%s'"%(email))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT minecraftKey FROM user_table WHERE email='%s'"%(email))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:
+                return None
+            else:
+                return key[0]
 
     # Get minecraft Key with Username
     def getMinecraftKeyViaMinecraftUsername(self,minecraftUsername):
@@ -198,72 +204,75 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT minecraftKey FROM player WHERE minecraftUsername='%s'"%(minecraftUsername))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT minecraftKey FROM user_table WHERE minecraftUsername='%s'"%(minecraftUsername))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:
+                return None
+            else:
+                return key[0]
 
-    #########################
-    # AWSKey Commands
-    ##########################
+    # #########################
+    # # AWSKey Commands
+    # ##########################
 
-    # Set (UPDATE) AWS Key with UID
-    def setAWSKeyViaUID(self,uid,key):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET AWSKey='%s' WHERE uid='%d'" % (key,int(uid),))
-            self.conn.commit()
-            cur.close()
+    # # Set (UPDATE) AWS Key with UID
+    # def setAWSKeyViaUID(self,uid,key):
+    #     if self.conn is None:
+    #         # error
+    #         pass
+    #     else:
+    #         cur= self.conn.cursor()
+    #         cur.execute ("UPDATE user_table SET AWSKey='%s' WHERE uid='%s'" % (key,uid,))
+    #         self.conn.commit()
+    #         cur.close()
 
-    # Set (UPDATE) AWS Key with minecraft username
-    def setAWSViaMinecraftUsername(self,minecraftUsername,key):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET AWSKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
-            self.conn.commit()
-            cur.close()
+    # # Set (UPDATE) AWS Key with minecraft username
+    # def setAWSViaMinecraftUsername(self,minecraftUsername,key):
+    #     if self.conn is None:
+    #         # error
+    #         pass
+    #     else:
+    #         cur= self.conn.cursor()
+    #         cur.execute ("UPDATE user_table SET AWSKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
+    #         self.conn.commit()
+    #         cur.close()
 
-    # Get AWS Key with user id
-    def getMinecraftKeyViaUID(self,uid):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("SELECT AWSKey FROM player WHERE uid='%d'"%(int(uid)))
-            (key,) = cur.fetchone()
-            cur.close()
-            return key
+    # # Get AWS Key with user id
+    # def getAWSKeyViaUID(self,uid):
+    #     if self.conn is None:
+    #         # error
+    #         pass
+    #     else:
+    #         cur= self.conn.cursor()
+    #         cur.execute ("SELECT AWSKey FROM user_table WHERE uid='%s'"%(uid))
+    #         key = cur.fetchone()
+    #         cur.close()
+    #         return key
 
-    # Get minecraft Key with email address
-    def getAWSKeyViaEmail(self,email):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("SELECT AWSKey FROM player WHERE email='%s'"%(email))
-            (key,) = cur.fetchone()
-            cur.close()
-            return key
+    # # Get minecraft Key with email address
+    # def getAWSKeyViaEmail(self,email):
+    #     if self.conn is None:
+    #         # error
+    #         pass
+    #     else:
+    #         cur= self.conn.cursor()
+    #         cur.execute ("SELECT AWSKey FROM user_table WHERE email='%s'"%(email))
+    #         key = cur.fetchone()
+    #         cur.close()
+    #         return key
 
-    # Get minecraft Key with Username
-    def getAWSKeyViaMinecraftUsername(self,minecraftUsername):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("SELECT AWSKey FROM player WHERE minecraftUsername='%s'"%(minecraftUsername))
-            (key,) = cur.fetchone()
-            cur.close()
-            return key
+    # # Get minecraft Key with Username
+    # def getAWSKeyViaMinecraftUsername(self,minecraftUsername):
+    #     if self.conn is None:
+    #         # error
+    #         pass
+    #     else:
+    #         cur= self.conn.cursor()
+    #         cur.execute ("SELECT AWSKey FROM user_table WHERE minecraftUsername='%s'"%(minecraftUsername))
+    #         key = cur.fetchone()
+    #         cur.close()
+    #         return key
 
     #########################
     # FIREHOSE Commands
@@ -277,10 +286,13 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM player WHERE uid='%d'"%(int(uid)))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT firehoseKey FROM user_table WHERE uid='%s'"%(uid))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:
+                return None
+            else:
+                return key[0]
 
     # Get firehose Key with email address
     def getFirehoseKeyViaEmail(self,email):
@@ -289,10 +301,13 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM player WHERE email='%s'"%(email))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT firehoseKey FROM user_table WHERE email='%s'"%(email))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:
+                return None
+            else:
+                return key[0]
 
     # Get firehose Key with Username
     def getFirehoseKeyViaMinecraftUsername(self,minecraftUsername):
@@ -301,10 +316,13 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM player WHERE minecraftUsername='%s'"%(minecraftUsername))
-            (key,) = cur.fetchone()
+            cur.execute ("SELECT firehoseKey FROM user_table WHERE minecraftUsername='%s'"%(minecraftUsername))
+            key = cur.fetchone()
             cur.close()
-            return key
+            if key is None:                 
+                return None             
+            else:                 
+                return key[0]
 
    # Set (UPDATE) firehose Key with UID
     def setFirehoseKeyViaUID(self,uid,key):
@@ -313,7 +331,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET firehose='%s' WHERE uid='%d'" % (key,int(uid),))
+            cur.execute ("UPDATE user_table SET firehose='%s' WHERE uid='%s'" % (key,uid))
             self.conn.commit()
             cur.close()
 
@@ -324,7 +342,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE player SET firehoseKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
+            cur.execute ("UPDATE user_table SET firehoseKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
             self.conn.commit()
             cur.close()
 
@@ -339,8 +357,21 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("SELECT id FROM player WHERE email='%s'"%(email))
-                tmp = cur.fetchone()
+                cur.execute ("SELECT id FROM user_table WHERE email='%d'"%(email))
+                (tmp,) = cur.fetchone()
+                print(tmp)
+                if tmp is None:
+                    
+                    tmp = True
+                else:
+                    tmp = False
+            except:
+                tmp = True
+            status.append(tmp)
+            try:
+                cur.execute ("SELECT id FROM user_table WHERE minecraftUsername='%d'"%(minecraftUsername))
+                (tmp,) = cur.fetchone()
+                print(tmp)
                 if tmp is None:
                     tmp = True
                 else:
@@ -349,18 +380,9 @@ class mySQLLib:
                 tmp = True
             status.append(tmp)
             try:
-                cur.execute ("SELECT id FROM player WHERE minecraftUsername='%s'"%(minecraftUsername))
-                tmp = cur.fetchone()
-                if tmp is None:
-                    tmp = True
-                else:
-                    tmp = False
-            except:
-                tmp = True
-            status.append(tmp)
-            try:
-                cur.execute ("SELECT id FROM player WHERE uid='%d'"%(uid))
-                tmp = cur.fetchone()
+                cur.execute ("SELECT id FROM user_table WHERE uid='%s'"%(uid))
+                (tmp,) = cur.fetchone()
+                print(tmp)
                 if tmp is None:
                     tmp = True
                 else:
@@ -371,11 +393,39 @@ class mySQLLib:
             cur.close()
         return status
 
+    #########################
+    # Get User Status
+    #########################  
+
+    # Query and return if the user is 'valid', 'banned', 'removed', etc.
+    # default status is 'invalid' indicating user does not exist
+    def getStatus (self, uid):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+            try:
+                cur.execute ("SELECT removed FROM user_table WHERE uid='%s'"%(uid))
+                (removed,) = cur.fetchone()
+                if removed is None:
+                    cur.close()
+                    return 'invalid'
+                else:
+                    cur.close()
+                    if removed:
+                        return 'removed'
+                    else:
+                        return 'valid'
+            except:
+                return 'invalid'
+            cur.close()
+
 
 
 if __name__ == '__main__':    
     playerDB = mySQLLib ()
-    playerDB.Open("player_database")
+    playerDB.Open("user_database")
     print (playerDB.listUsers())
     playerDB.addUser('ricky.houghton@gmail.com','mountainBiker',2345)
     print (playerDB.listUsers())
@@ -394,13 +444,13 @@ if __name__ == '__main__':
     print (playerDB.isUnique('imushroom1@gmail.com','imushroom1',1234))
     print (playerDB.isUnique('imushroom2@gmail.com','imushroom2',12345))
 
-    AWSKey = '987654'
-    playerDB.setAWSViaMinecraftUsername('mountainBiker',AWSKey)
-    tmp = playerDB.getAWSKeyViaMinecraftUsername('mountainBiker')
-    if tmp == AWSKey:
+    FirehsoeKey = '987654'
+    playerDB.setFirehoseKeyViaMinecraftUsername('mountainBiker',FirehsoeKey)
+    tmp = playerDB.getFirehoseKeyViaMinecraftUsername('mountainBiker')
+    if tmp == FirehsoeKey:
         print ("setAWSViaMineCraftUsername: Success")
     else:
-        print (AWSKey,tmp)
+        print (FirehsoeKey,tmp)
         print ("setAWSViaMineCraftUsername: FAILURE")
 
     #playerDB.deleteUserViaEmail('ricky.houghton@gmail.com')

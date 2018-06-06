@@ -5,7 +5,7 @@ import socket
 import hashlib
 
 
-HOST, PORT = "18.206.147.166", 9999
+HOST, PORT = "localhost", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(2)
 username = '1957295fdsahjklbfdjk'
@@ -53,6 +53,17 @@ def remove_user():
     print("Sent:     {}".format(data))
     print("Received: {}".format(received))
 
+def make_awesome():
+    data = {}
+    data['cmd'] = 'make_awesome'
+    data['uid'] = uid
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
 def get_firehose_key():
     data = {}
     data['cmd'] = 'get_firehose_key'
@@ -76,25 +87,29 @@ def get_minecraft_key():
     print("Sent:     {}".format(data))
     print("Received: {}".format(received))
 
-
-while True:
+run = True
+while run:
 
     # Ping the user server with echo command
     run_test(test_echo)
+    print()
 
     # Add a user
     run_test(add_user)
+    print()
 
-    # Get a firehose key for that user
+    # Make that user Awesome
+    run_test(make_awesome)
+    print()
 
     # Get a minecraft key for that user
     run_test(get_minecraft_key)
+    print()
 
     # Remove that user
     run_test(remove_user)
+    print()
 
     
-
-
-
+    run = False
     time.sleep(1)

@@ -33,6 +33,14 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         
         if 'cmd' in request:
             response = {}
+            response['timestamp'] = datetime.datetime.now().strftime("%m_%d_%H_%M_%S")
+
+            playerDB = mySQLLib.mySQLLib()
+            playerDB.Open("user_database")
+
+
+            ## If there was no error in executing the command the packet will be sent at the end
+            ## if an error was encountered set 'error' = true, send the packet, and return immediately
             
             # Form the response
             if request['cmd'] == 'echo':
@@ -40,46 +48,97 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             #######          List Users          ########
             elif request['cmd'] == 'list_users':
-                playerDB = mySQLLib.mySQLLib()
-                playerDB.Open("player_database")
                 response['list'] = playerDB.listUsers()
 
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
                 # TODO check if they exist but are 'removed' or 'banned', etc.
+        
                 if 'email' in request and 'mcusername' in request:
+
                     uid = generateUserID(request['mcusername'])
-                    #playerDB.addUser( \
-                    #    request['email'],
-                    #    request['mcusername'],
-                    #    uid)
-                    response['status'] = 'Success'
-                    response['uid'] = uid
+
+                    #Check if user info is unique
+                    if not all( playerDB.isUnique( request['email'], 
+                            request['mcusername'], uid)):
+                        response['unique'] = False
+
+                        status = playerDB.getStatus(uid)
+
+                        # User is allready added if they have a status 
+                        if status != 'invalid' and status != 'removed':
+                            # TODO support re-adding users who have been removed
+                            response['status'] = 'failure'
+                            response['message'] = 'Username is taken'
+                            response['status'] = status
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+
+                        elif status == 'invalid':
+                            # User has an invalid status - they likely don't exist yet
+                            response['status'] = 'failure'
+                            response['message'] = 'Email address is taken'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+
+                    # Add the user to the database
+                    playerDB.addUser( \
+                       request['email'],
+                       request['mcusername'],
+                       uid)
+
+                    response['status'] = 'success'
+                    #response['uid'] = uid
+                    response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
                 else:    
-                    response['status'] = 'Failed'
+                    response['error'] = True
+                    response['status'] = 'failure'
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
+                    socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                    return
 
             ########           Remove User          ########
             elif request['cmd'] == 'remove_user':
                 # TODO Remove user by marking them as removed (not deleting them)
-                if 'uid' in request: 
+                if 'uid' in request:
+                        
                     #playerDB.deleteUserViaUID(request['uid'])
                     response['status'] = 'Success'
-                elif 'mcusername' in request:
-                    #playerDB.deleteUserViaEmail(request['email'])
-                    response['status'] = 'Success'
-                elif 'email' in request:
-                    #playerDB.deleteUserViaEmail(request['email'])
-                    response['status'] = 'Success'
+                    response['message'] = 'Really nothing happend - we this command will be supported at a later date'
                 else:
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs one of uid, mcusername, email'
+
+            ########           Get Status            ########
+            elif request['cmd'] == 'get_status':
+                # TODO Remove user by marking them as removed (not deleting them)
+                # TODO Implement actual status return
+                if 'uid' in request: 
+                    response['banned'] = False 
+                    response['awesome'] = True
+                    response['queue_position'] = 120
+                    response['message'] = 'Request needs one of uid, mcusername, email'
+                else:
+                    response['status'] = 'Failure'
+                    response['message'] = 'Request needs one of uid, mcusername, email'
+
+            ########           Change Status        ########
+            elif request['cmd'] == 'make_awesome':
+                # TODO Remove user by marking them as removed (not deleting them)
+                if 'uid' in request: 
+                    response['banned'] = False 
+                    response['awesome'] = True
+                    response['queue_position'] = 120
+                    response['message'] = 'Request needs valid uid'
+                else:
+                    response['status'] = 'Failure'
+                    response['message'] = 'Request needs valid uid'
 
             ########           Get MC Key           ########
             elif request['cmd'] == 'get_minecraft_key':
                 minecraft_key = generateSecureString(45)
                 if 'uid' in request:
-                    #playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
                 else:
                     response['status'] = 'Failed'
@@ -123,7 +182,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         return
 
                     # Record stream and session id in database
-                    #playerDB = mySQLLib.mySQLLib()
                     # playerDB.setFirehoseKeyViaUID(
                     #   uid, 
                     #   credentials['AccessKeyId'], 
@@ -148,6 +206,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             else:
                 response['error'] = True
                 response['status'] = 'Failed, cmd not understood'
+                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                return
+
+            ###    Command executed correctly     ###
+            response['error'] = False
 
             ###    Send response    ###
             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
