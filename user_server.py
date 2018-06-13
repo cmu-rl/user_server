@@ -170,7 +170,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
                     bucketARN = 'arn:aws:s3:::rickyfubar'
 
-                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.date.now().strftime("_%H_%M_%S")   
+                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%H_%M_%S")   
                     try:
                         createdFirehose = firehoseClient.create_delivery_stream(
                             DeliveryStreamName = firehoseStreamName,
