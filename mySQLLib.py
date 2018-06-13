@@ -294,36 +294,6 @@ class mySQLLib:
             else:
                 return key[0]
 
-    # Get firehose Key with email address
-    def getFirehoseKeyViaEmail(self,email):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM user_table WHERE email='%s'"%(email))
-            key = cur.fetchone()
-            cur.close()
-            if key is None:
-                return None
-            else:
-                return key[0]
-
-    # Get firehose Key with Username
-    def getFirehoseKeyViaMinecraftUsername(self,minecraftUsername):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM user_table WHERE minecraftUsername='%s'"%(minecraftUsername))
-            key = cur.fetchone()
-            cur.close()
-            if key is None:                 
-                return None             
-            else:                 
-                return key[0]
-
    # Set (UPDATE) firehose Key with UID
     def setFirehoseKeyViaUID(self,uid,key):
         if self.conn is None:
@@ -332,17 +302,6 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             cur.execute ("UPDATE user_table SET firehose='%s' WHERE uid='%s'" % (key,uid))
-            self.conn.commit()
-            cur.close()
-
-    # Set (UPDATE) firehose Key with minecraft username
-    def setFirehoseKeyViaMinecraftUsername(self,minecraftUsername,key):
-        if self.conn is None:
-            # error
-            pass
-        else:
-            cur= self.conn.cursor()
-            cur.execute ("UPDATE user_table SET firehoseKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
             self.conn.commit()
             cur.close()
 
@@ -406,17 +365,17 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("SELECT removed FROM user_table WHERE uid='%s'"%(uid))
-                (removed,) = cur.fetchone()
+                cur.execute ("SELECT removed, banned, awesome FROM user_table WHERE uid='%s'"%(uid))
+                (removed, banned, awesome,) = cur.fetchone()
                 if removed is None:
                     cur.close()
                     return 'invalid'
                 else:
                     cur.close()
-                    if removed:
-                        return 'removed'
-                    else:
-                        return 'valid'
+                    status = {}
+                    status['removed'] = removed
+                    status['banned'] = banned
+                    status['awesome'] = awesome
             except:
                 return 'invalid'
             cur.close()

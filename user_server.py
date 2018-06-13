@@ -59,10 +59,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     uid = generateUserID(request['mcusername'])
 
                     #Check if user info is unique
-                    if not all( playerDB.isUnique( request['email'], 
-                            request['mcusername'], uid)):
+                    if not all( playerDB.isUnique( request['email'], request['mcusername'], uid)):
                         response['unique'] = False
-
                         status = playerDB.getStatus(uid)
 
                         # User is allready added if they have a status 
@@ -127,12 +125,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             ########           Get Status            ########
             elif request['cmd'] == 'get_status':
-                # TODO Remove user by marking them as removed (not deleting them)
                 # TODO Implement actual status return
                 if 'uid' in request: 
-                    response['banned'] = True 
-                    response['awesome'] = True
-                    response['queue_position'] = 120
+                    status = playerDB.getStatus(request['uid'])
+                    response.update(status)
+                    response['status'] = 'Success'
                     response['message'] = 'Status returned sucessfully'
                 else:
                     response['status'] = 'Failure'
@@ -145,7 +142,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['banned'] = False 
                     response['awesome'] = True
                     response['queue_position'] = 120
-                    response['message'] = 'Request needs valid uid'
+                    response['message'] = 'Comand not supported yet'
                 else:
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs valid uid'
