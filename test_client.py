@@ -53,6 +53,17 @@ def remove_user():
     print("Sent:     {}".format(data))
     print("Received: {}".format(received))
 
+def get_status():
+    data = {}
+    data['cmd'] = 'get_status'
+    data['uid'] = uid
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
 def make_awesome():
     data = {}
     data['cmd'] = 'make_awesome'
@@ -98,8 +109,16 @@ while run:
     run_test(add_user)
     print()
 
+    # Look at their status
+    run_test(get_status)
+    print()
+
     # Make that user Awesome
     run_test(make_awesome)
+    print()
+
+    # Look at their status
+    run_test(get_status)
     print()
 
     # Get a minecraft key for that user

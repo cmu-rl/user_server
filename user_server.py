@@ -154,7 +154,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['banned'] = False 
                     response['awesome'] = True
                     response['queue_position'] = 120
-                    response['message'] = 'Comand not supported yet'
+                    response['message'] = 'Command not supported yet'
                 else:
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs valid uid'
