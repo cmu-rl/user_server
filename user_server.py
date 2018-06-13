@@ -156,6 +156,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     sts = boto3.client('sts')
                 
                     # Get Session Token via AssumeRole
+                    # TODO handle error when stream is unable to be created
                     sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
                     role = sts.assume_role(RoleArn='arn:aws:iam::058861212628:role/iam_client_streamer', RoleSessionName=sessionName)
 
@@ -169,7 +170,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
                     bucketARN = 'arn:aws:s3:::rickyfubar'
 
-                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.date.today().strftime("_%H_%M_%S")   
+                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.date.now().strftime("_%H_%M_%S")   
                     try:
                         createdFirehose = firehoseClient.create_delivery_stream(
                             DeliveryStreamName = firehoseStreamName,
