@@ -95,6 +95,18 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                     return
 
+            ########           Add to Queue          ########
+            elif request['cmd'] == 'add_to_queue':
+                # TODO Remove user by marking them as removed (not deleting them)
+                if 'uid' in request:
+                        
+                    #playerDB.deleteUserViaUID(request['uid'])
+                    response['status'] = 'Success'
+                    response['message'] = 'Nothing happend - we this command will be supported at a later date'
+                else:
+                    response['status'] = 'Failure'
+                    response['message'] = 'Request needs one of uid, mcusername, email'
+
             ########           Remove User          ########
             elif request['cmd'] == 'remove_user':
                 # TODO Remove user by marking them as removed (not deleting them)
@@ -107,7 +119,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs one of uid, mcusername, email'
 
-            ########           Validate UKey          ########
+            ########           Validate Key          ########
             elif request['cmd'] == 'validate_key':
 
                 if 'uid' in request and 'key' in request:
