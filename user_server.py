@@ -104,10 +104,26 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         
                     #playerDB.deleteUserViaUID(request['uid'])
                     response['status'] = 'Success'
-                    response['message'] = 'Really nothing happend - we this command will be supported at a later date'
+                    response['message'] = 'Nothing happend - we this command will be supported at a later date'
                 else:
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs one of uid, mcusername, email'
+
+            ########           Validate UKey          ########
+            elif request['cmd'] == 'validate_key':
+
+                if 'uid' in request and 'key' in request:
+                    mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
+
+                    if mcKey == request['key']:
+                        response['status'] = 'Success'
+                        response['key_is_valid'] = True
+                    else:
+                        response['status'] = 'Success'
+                        response['key_is_valid'] = False
+                else:
+                    response['status'] = 'Failure'
+                    response['message'] = 'Request needs both <uid> and <key>'
 
             ########           Get Status            ########
             elif request['cmd'] == 'get_status':
@@ -117,7 +133,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['banned'] = False 
                     response['awesome'] = True
                     response['queue_position'] = 120
-                    response['message'] = 'Request needs one of uid, mcusername, email'
+                    response['message'] = 'Status returned sucessfully'
                 else:
                     response['status'] = 'Failure'
                     response['message'] = 'Request needs one of uid, mcusername, email'
@@ -179,6 +195,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                                 'BucketARN': bucketARN
                             })
                     except Exception as E:
+                        # TODO handle exception with error message
                         print (E)
                         return
 
