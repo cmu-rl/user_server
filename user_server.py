@@ -130,7 +130,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 # TODO Remove user by marking them as removed (not deleting them)
                 # TODO Implement actual status return
                 if 'uid' in request: 
-                    response['banned'] = False 
+                    response['banned'] = True 
                     response['awesome'] = True
                     response['queue_position'] = 120
                     response['message'] = 'Status returned sucessfully'
