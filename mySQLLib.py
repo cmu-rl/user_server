@@ -373,9 +373,10 @@ class mySQLLib:
                 else:
                     cur.close()
                     status = {}
-                    status['removed'] = removed
-                    status['banned'] = banned
-                    status['awesome'] = awesome
+                    status['removed'] = bool(removed)
+                    status['banned'] = bool(banned)
+                    status['awesome'] = bool(awesome)
+                    return status
             except:
                 return 'invalid'
             cur.close()

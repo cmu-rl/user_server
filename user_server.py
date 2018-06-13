@@ -7,8 +7,8 @@ import datetime
 import mySQLLib
 import socketserver
 
-def generateUserID(minecraftID):
-    return hashlib.md5(minecraftID.encode('utf-8')).hexdigest()
+def generateUserID(minecraftUUID):
+    return hashlib.md5(minecraftUUID.encode('utf-8')).hexdigest()
 
 def generateSecureString(len):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
@@ -66,15 +66,14 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         # User is allready added if they have a status 
                         if status != 'invalid' and status != 'removed':
                             # TODO support re-adding users who have been removed
-                            response['status'] = 'failure'
+                            response['error'] = True
                             response['message'] = 'Username is taken'
-                            response['status'] = status
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
 
                         elif status == 'invalid':
                             # User has an invalid status - they likely don't exist yet
-                            response['status'] = 'failure'
+                            response['error'] = True
                             response['message'] = 'Email address is taken'
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
@@ -85,12 +84,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                        request['mcusername'],
                        uid)
 
-                    response['status'] = 'success'
+                    response['error'] = False
                     #response['uid'] = uid
                     response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
                 else:    
                     response['error'] = True
-                    response['status'] = 'failure'
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                     return
@@ -101,10 +99,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 if 'uid' in request:
                         
                     #playerDB.deleteUserViaUID(request['uid'])
-                    response['status'] = 'Success'
                     response['message'] = 'Nothing happend - we this command will be supported at a later date'
                 else:
-                    response['status'] = 'Failure'
+                    response['error'] = True
                     response['message'] = 'Request needs one of uid, mcusername, email'
 
             ########           Remove User          ########
@@ -113,10 +110,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 if 'uid' in request:
                         
                     #playerDB.deleteUserViaUID(request['uid'])
-                    response['status'] = 'Success'
                     response['message'] = 'Nothing happend - we this command will be supported at a later date'
                 else:
-                    response['status'] = 'Failure'
+                    response['error'] = True
                     response['message'] = 'Request needs one of uid, mcusername, email'
 
             ########           Validate Key          ########
@@ -126,25 +122,25 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
 
                     if mcKey == request['key']:
-                        response['status'] = 'Success'
                         response['key_is_valid'] = True
                     else:
-                        response['status'] = 'Success'
                         response['key_is_valid'] = False
                 else:
-                    response['status'] = 'Failure'
+                    response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
 
             ########           Get Status            ########
             elif request['cmd'] == 'get_status':
-                # TODO Implement actual status return
                 if 'uid' in request: 
                     status = playerDB.getStatus(request['uid'])
                     response.update(status)
-                    response['status'] = 'Success'
+
+
+
+                    response['command_status'] = 'Success'
                     response['message'] = 'Status returned sucessfully'
                 else:
-                    response['status'] = 'Failure'
+                    response['error'] = True
                     response['message'] = 'Request needs one of uid, mcusername, email'
 
             ########           Change Status        ########
@@ -156,7 +152,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['queue_position'] = 120
                     response['message'] = 'Command not supported yet'
                 else:
-                    response['status'] = 'Failure'
+                    response['error'] = True
                     response['message'] = 'Request needs valid uid'
 
             ########           Get MC Key           ########
@@ -166,7 +162,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
                 else:
-                    response['status'] = 'Failed'
+                    response['error'] = True
                     response['message'] = 'Request needs valid uid'
 
             ########        Get FireHose Key        ########
@@ -225,21 +221,20 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     #response['expiration'] = credentials['Expiration']
 
                 else:
-                    response['status'] = 'Failed'
+                    response['error'] = True
                     response['message'] = 'Request needs valid uid'
 
 
             ########          Default Error          ########
             else:
                 response['error'] = True
-                response['status'] = 'Failed, cmd not understood'
+                response['message'] = 'Failed, cmd not understood'
                 socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                 return
 
-            ###    Command executed correctly     ###
-            response['error'] = False
-
             ###    Send response    ###
+            if not 'error' in response:
+                response['error'] = False
             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
         else:
             return
