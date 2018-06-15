@@ -64,6 +64,17 @@ def get_status():
     print("Sent:     {}".format(data))
     print("Received: {}".format(received))
 
+def get_invalid_status():
+    data = {}
+    data['cmd'] = 'get_status'
+    data['uid'] = uid + "__fake"
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
 def make_awesome():
     data = {}
     data['cmd'] = 'make_awesome'
@@ -87,7 +98,7 @@ def get_firehose_key():
     print("Received: {}".format(received))   
     
 
-def get_minecraft_key():
+def get_minecraft_key_and_validate():
     data = {}
     data['cmd'] = 'get_minecraft_key'
     data['uid'] = uid
@@ -95,8 +106,33 @@ def get_minecraft_key():
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
     received = str(sock.recv(1024), "utf-8")
 
+    print("Getting Key: ")
     print("Sent:     {}".format(data))
     print("Received: {}".format(received))
+
+    key_file = json.loads(received)
+
+    if 'minecraft_key' in key_file:
+        print("Validating Key: ")
+
+        key = key_file['minecraft_key']
+        data = {}
+        data['cmd'] = 'validate_minecraft_key'
+        data['uid'] = uid
+        data['minecraft_key'] = key
+
+        sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+        received = str(sock.recv(1024), "utf-8")
+
+        
+        print("Sent:     {}".format(data))
+        print("Received: {}".format(received))
+
+    else:
+        print("Not Validating Key - no minecraft_key in response")
+
+    
+
 
 run = True
 while run:
@@ -121,12 +157,17 @@ while run:
     run_test(get_status)
     print()
 
-    # Get a minecraft key for that user
-    run_test(get_minecraft_key)
+    # Get a minecraft key for that user and validate it
+    run_test(get_minecraft_key_and_validate)
     print()
+
 
     # Remove that user
     run_test(remove_user)
+    print()
+
+    # Try to get a status from an invalid user
+    run_test(get_invalid_status())
     print()
 
     
