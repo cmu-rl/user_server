@@ -365,8 +365,8 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             try:
-                cur.execute ("SELECT removed, banned, awesome FROM user_table WHERE uid='%s'"%(uid))
-                (removed, banned, awesome,) = cur.fetchone()
+                cur.execute ("SELECT removed, banned, awesome, offQueue, id FROM user_table WHERE uid='%s'"%(uid))
+                (removed, banned, awesome, offQueue, id) = cur.fetchone()
                 if removed is None:
                     cur.close()
                     return 'invalid'
@@ -376,6 +376,8 @@ class mySQLLib:
                     status['removed'] = bool(removed)
                     status['banned'] = bool(banned)
                     status['awesome'] = bool(awesome)
+                    status['off_queue'] = bool(offQueue)
+                    status['queue_position'] = int(id)
                     return status
             except:
                 return 'invalid'
