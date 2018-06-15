@@ -116,15 +116,23 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['message'] = 'Request needs one of uid, mcusername, email'
 
             ########           Validate Key          ########
-            elif request['cmd'] == 'validate_key':
+            elif request['cmd'] == 'validate_minecraft_key':
 
-                if 'uid' in request and 'key' in request:
-                    mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
+                if 'uid' in request and 'minecraft_key' in request:
+                    
 
-                    if mcKey == request['key']:
-                        response['key_is_valid'] = True
-                    else:
-                        response['key_is_valid'] = False
+                    try:
+                        mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
+                    except Exception:
+                        response['error'] = True
+                        response['message'] = 'Error getting key by uid'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    else: 
+                        if mcKey == request['minecraft_key']:
+                            response['key_is_valid'] = True
+                        else:
+                            response['key_is_valid'] = False
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
@@ -132,13 +140,17 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########           Get Status            ########
             elif request['cmd'] == 'get_status':
                 if 'uid' in request: 
-                    status = playerDB.getStatus(request['uid'])
-                    response.update(status)
-
-
-
-                    response['command_status'] = 'Success'
-                    response['message'] = 'Status returned sucessfully'
+                    try:
+                        status = playerDB.getStatus(request['uid'])
+                        response.update(status)
+                    except Exception:
+                        response['error'] = True
+                        response['message'] = 'Could not find user by uid'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    else:       
+                        response['command_status'] = 'Success'
+                        response['message'] = 'Status returned sucessfully'
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs one of uid, mcusername, email'
