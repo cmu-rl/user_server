@@ -205,17 +205,17 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%H_%M_%S")   
                     firehoseStreamName = 'rickyStream'
-                    try:
-                        createdFirehose = firehoseClient.create_delivery_stream(
-                            DeliveryStreamName = firehoseStreamName,
-                            S3DestinationConfiguration = {
-                                'RoleARN': roleARN,
-                                'BucketARN': bucketARN
-                            })
-                    except Exception as E:
-                        # TODO handle exception with error message
-                        print (E)
-                        return
+                    # try:
+                    #     createdFirehose = firehoseClient.create_delivery_stream(
+                    #         DeliveryStreamName = firehoseStreamName,
+                    #         S3DestinationConfiguration = {
+                    #             'RoleARN': roleARN,
+                    #             'BucketARN': bucketARN
+                    #         })
+                    # except Exception as E:
+                    #     # TODO handle exception with error message
+                    #     print (E)
+                    #     return
 
                     # Record stream and session id in database
                     # playerDB.setFirehoseKeyViaUID(
