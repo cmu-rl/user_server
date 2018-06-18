@@ -204,6 +204,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     bucketARN = 'arn:aws:s3:::rickyfubar'
 
                     firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%H_%M_%S")   
+                    firehoseStreamName = 'rickyStream'
                     try:
                         createdFirehose = firehoseClient.create_delivery_stream(
                             DeliveryStreamName = firehoseStreamName,
