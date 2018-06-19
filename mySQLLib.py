@@ -163,7 +163,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE user_table SET minecraftKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
+            cur.execute ("UPDATE user_table SET minecraftKey='%s' WHERE minecraftUsername='%s'" % (key,minecraftUsername))
             self.conn.commit()
             cur.close()
 
@@ -213,69 +213,74 @@ class mySQLLib:
                 return key[0]
 
     # #########################
-    # # AWSKey Commands
+    # # AWS Stream Commands
     # ##########################
 
-    # # Set (UPDATE) AWS Key with UID
-    # def setAWSKeyViaUID(self,uid,key):
-    #     if self.conn is None:
-    #         # error
-    #         pass
-    #     else:
-    #         cur= self.conn.cursor()
-    #         cur.execute ("UPDATE user_table SET AWSKey='%s' WHERE uid='%s'" % (key,uid,))
-    #         self.conn.commit()
-    #         cur.close()
+    # Add firehose stream to the pool
+    def addFirehoseStream(self, name, version, inUse=0):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur = self.conn.cursor()
+            cur.execute("INSERT INTO stream_table (streamName, streamVersion, inUse) VALUES(%s,%s,%s)",(name, version, inUse,))
+            self.conn.commit()
+            cur.close()
 
-    # # Set (UPDATE) AWS Key with minecraft username
-    # def setAWSViaMinecraftUsername(self,minecraftUsername,key):
-    #     if self.conn is None:
-    #         # error
-    #         pass
-    #     else:
-    #         cur= self.conn.cursor()
-    #         cur.execute ("UPDATE user_table SET AWSKey='%s' where minecraftUsername='%s'" % (key,minecraftUsername))
-    #         self.conn.commit()
-    #         cur.close()
+    # Get firehose stream from pool
+    # Returns None if no such stream is available
+    #   or a valid streamName otherwise
+    def getFirehoseStream(self):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            # TODO add uid logging (maybe)
+            cur= self.conn.cursor()
+            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0")
+            name = cur.fetchone()
 
-    # # Get AWS Key with user id
-    # def getAWSKeyViaUID(self,uid):
-    #     if self.conn is None:
-    #         # error
-    #         pass
-    #     else:
-    #         cur= self.conn.cursor()
-    #         cur.execute ("SELECT AWSKey FROM user_table WHERE uid='%s'"%(uid))
-    #         key = cur.fetchone()
-    #         cur.close()
-    #         return key
+            # BAH testing 
+            print(name)
 
-    # # Get minecraft Key with email address
-    # def getAWSKeyViaEmail(self,email):
-    #     if self.conn is None:
-    #         # error
-    #         pass
-    #     else:
-    #         cur= self.conn.cursor()
-    #         cur.execute ("SELECT AWSKey FROM user_table WHERE email='%s'"%(email))
-    #         key = cur.fetchone()
-    #         cur.close()
-    #         return key
+            if name is None:
+                return None
+            else:
+                cur.execute ("UPDATE stream_table SET inUse=1 WHERE streamName='%s'" % (name))
+                self.conn.commit()
+                cur.close()
+                return name
 
-    # # Get minecraft Key with Username
-    # def getAWSKeyViaMinecraftUsername(self,minecraftUsername):
-    #     if self.conn is None:
-    #         # error
-    #         pass
-    #     else:
-    #         cur= self.conn.cursor()
-    #         cur.execute ("SELECT AWSKey FROM user_table WHERE minecraftUsername='%s'"%(minecraftUsername))
-    #         key = cur.fetchone()
-    #         cur.close()
-    #         return key
+    # Takes a stream name that has been configured and puts it back in the pool
+    # Streams must be versioned correctly! You must not add stream to pool until
+    # stream version matches that returnd by the changeStream function (if called)
+    # name must be unique
+    def returnFirehoseStream(self, name, version):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+            cur.execute ("UPDATE stream_table SET inUse=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
+
+            self.conn.commit()
+            cur.close()
+            return name
+
+    def getFirehoseStreamCount(self):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            return 5
+            cur= self.conn.cursor()
+            cur.execute ("SELECT count(id), SUM(inUse=0) AS countNotInUse;")
+            countNotInUse = cur.fetchone()
+            cur.close()
+            return countNotInUse
 
     #########################
-    # FIREHOSE Commands
+    # FIREHOSE Commands (depricated)
     ##########################
 
 
@@ -302,6 +307,18 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
             cur.execute ("UPDATE user_table SET firehose='%s' WHERE uid='%s'" % (key,uid))
+            self.conn.commit()
+            cur.close()
+
+    # Set all firehose credentials with UID
+    def setFirehoseCredentialsViaUID(self,uid, streamName, accessKey, secretKey, sessionToken):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+            # TODO send the rest of credentials to server
+            cur.execute ("UPDATE user_table SET firehoseStreamName='%s' WHERE uid='%s'" % (streamName,uid))
             self.conn.commit()
             cur.close()
 

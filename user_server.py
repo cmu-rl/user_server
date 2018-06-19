@@ -179,63 +179,109 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             ########        Get FireHose Key        ########
             elif request['cmd'] == 'get_firehose_key':
-                # TODO Check if UID is valid                
-                # TODO Check if user has a key allready
-
                 if 'uid' in request:
 
                     uid = request['uid']
 
-                    sts = boto3.client('sts')
+                    # TODO Validate UID
+                    if False:
+                        return
+
+                    # Get key from pool
+                    # TODO store who checked out which key
+                    streamName = playerDB.getFirehoseStream()
+
+                    # Check that we have a good stream
+                    if not streamName is None:
+                        response['stream_name'] = streamName
                 
                     # Get Session Token via AssumeRole
-                    # TODO handle error when stream is unable to be created
+                    sts = boto3.client('sts')
+                    # TODO handle error when role cannot be assumed
                     sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
                     role = sts.assume_role(RoleArn='arn:aws:iam::058861212628:role/iam_client_streamer', RoleSessionName=sessionName)
 
-                    print (role)
                     credentials = role['Credentials']
 
-                    # Open FireHose Stream with key
-                    firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                    # If we failed to find a stream in the pool or
+                    # if the pool is too low, open a new FireHose Stream
+                    # TODO remove magic number (5)
+                    if playerDB.getFirehoseStreamCount() < 5 or not 'stream_name' in response:
+                        # Open FireHose Stream 
+                        # TODO handle error when stream is unable to be created
+                        firehoseClient = boto3.client('firehose', region_name='us-east-1')
 
-                    # the role for firehose needs to have access to S3 - make policy that includes this
-                    roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
-                    bucketARN = 'arn:aws:s3:::rickyfubar'
+                        # the role for firehose needs to have access to S3 - make policy that includes this
+                        roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
+                        bucketARN = 'arn:aws:s3:::rickyfubar'
 
-                    firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%H_%M_%S")   
-                    firehoseStreamName = 'rickyStream'
-                    # try:
-                    #     createdFirehose = firehoseClient.create_delivery_stream(
-                    #         DeliveryStreamName = firehoseStreamName,
-                    #         S3DestinationConfiguration = {
-                    #             'RoleARN': roleARN,
-                    #             'BucketARN': bucketARN
-                    #         })
-                    # except Exception as E:
-                    #     # TODO handle exception with error message
-                    #     print (E)
-                    #     return
 
-                    # Record stream and session id in database
-                    # playerDB.setFirehoseKeyViaUID(
-                    #   uid, 
-                    #   credentials['AccessKeyId'], 
-                    #   credentials['SecretAccessKey'], 
-                    #   credentials['SessionToken'],
-                    #   firehoseStreamName)
+                        # TODO stop naming streams with UID - think of better scheme
+                        firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
+                        try:
+                            createdFirehose = firehoseClient.create_delivery_stream(
+                                DeliveryStreamName = firehoseStreamName,
+                                S3DestinationConfiguration = {
+                                    'RoleARN': roleARN,
+                                    'BucketARN': bucketARN
+                                })
+                        except Exception as E:
+                            # TODO handle exception with error message
+                            # TODO still give user a stream if this is an error
+                            print (E)
+                            return
+
+                        # If pool was empty, give the stream to the user
+                        if not 'stream_name' in response:
+                            response['stream_name'] =firehoseStreamName
+                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True)
+                            
+                        else: # Otherwise add this new stream to the pool
+                            # TODO get actual version
+                            playerDB.addFirehoseStream(firehoseStreamName,'12345678')
+
+
 
                     # Send access tokens to requestor
-                    response['stream_name'] = firehoseStreamName
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
                     response['session_token'] = credentials['SessionToken']
                     #TODO serialize expiriation object (below)
                     #response['expiration'] = credentials['Expiration']
 
+                    # Record stream and session id in database
+                    playerDB.setFirehoseCredentialsViaUID(
+                        uid, 
+                        response['stream_name'],
+                        response['access_key'], 
+                        response['secret_key'], 
+                        response['session_token'])
+
+
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs valid uid'
+
+            ########       Return FireHose Key       ########
+            elif request['cmd'] == 'return_firehose_key':
+                if 'uid' in request and 'stream_name' in request:
+
+                    uid = request['uid']
+                    streamName = request['stream_name']
+
+                    # TODO Validate UID
+                    if False:
+                        return
+
+                    # TODO process returned stream name
+
+                    # TODO validate that stream name was in the pool allready
+
+                    # TODO Validate uid that checked it out is returning it (maybe)
+
+                    # Return key to pool
+                    playerDB.returnFirehoseStream(streamName, '123456')
+
 
 
             ########          Default Error          ########

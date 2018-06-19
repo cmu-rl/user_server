@@ -6,7 +6,7 @@ import hashlib
 
 
 HOST, PORT = "localhost", 9999
-HOST, PORT = "18.206.147.166", 9999
+#HOST, PORT = "18.206.147.166", 9999
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(2)
 username = '1957295fdsahjklbfdjk'
@@ -133,6 +133,39 @@ def get_minecraft_key_and_validate():
     else:
         print("Not Validating Key - no minecraft_key in response")
 
+def get_firehose_key_and_return():
+    data = {}
+    data['cmd'] = 'get_firehose_key'
+    data['uid'] = uid
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Getting Firehose Stream: ")
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
+    stream_info = json.loads(received)
+
+    if 'stream_name' in stream_info:
+        print("Returning Stream: ")
+
+        name = stream_info['stream_name']
+        data = {}
+        data['cmd'] = 'return_firehose_key'
+        data['uid'] = uid
+        data['stream_name'] = name
+
+        sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+        received = str(sock.recv(1024), "utf-8")
+
+        
+        print("Sent:     {}".format(data))
+        print("Received: {}".format(received))
+
+    else:
+        print("Not Returning Key - no stream_name in response")
+
     
 
 
@@ -161,6 +194,10 @@ while run:
 
     # Get a minecraft key for that user and validate it
     run_test(get_minecraft_key_and_validate)
+    print()
+
+    # Get a firehose stream from the pool and return it
+    run_test(get_firehose_key_and_return)
     print()
 
 
