@@ -133,6 +133,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             response['key_is_valid'] = True
                         else:
                             response['key_is_valid'] = False
+                            response['correct_key'] = mcKey
+                            response['given_key'] = request['minecraft_key']
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
