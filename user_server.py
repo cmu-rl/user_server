@@ -203,10 +203,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     credentials = role['Credentials']
 
+                    # TODO if there was an error creating sesion credentials give the stream back
+
                     # If we failed to find a stream in the pool or
                     # if the pool is too low, open a new FireHose Stream
                     # TODO remove magic number (5)
-                    if playerDB.getFirehoseStreamCount() < 5 or not 'stream_name' in response:
+                    if not 'stream_name' in response:
                         # Open FireHose Stream 
                         # TODO handle error when stream is unable to be created
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
@@ -232,8 +234,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             return
 
                         # If pool was empty, give the stream to the user
-                        if not 'stream_name' in response:
-                            response['stream_name'] =firehoseStreamName
+                        if not ('stream_name' in response):
+                            response['stream_name'] = firehoseStreamName
                             playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True)
                             
                         else: # Otherwise add this new stream to the pool

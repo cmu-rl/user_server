@@ -316,6 +316,7 @@ class mySQLLib:
             # error
             pass
         else:
+            return
             cur= self.conn.cursor()
             # TODO send the rest of credentials to server
             cur.execute ("UPDATE user_table SET firehoseStreamName='%s' WHERE uid='%s'" % (streamName,uid))
