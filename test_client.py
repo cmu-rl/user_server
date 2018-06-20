@@ -26,10 +26,10 @@ def test_echo():
     data['cmd'] = 'echo'
     data['useless'] = 'thisisauselessstringofinfromationthatwillberemoved'
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def add_user():
     data = {}
@@ -38,10 +38,10 @@ def add_user():
     data['email'] = email
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def remove_user():
     data = {}
@@ -49,10 +49,10 @@ def remove_user():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def get_status():
     data = {}
@@ -60,10 +60,10 @@ def get_status():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def get_invalid_status():
     data = {}
@@ -71,11 +71,11 @@ def get_invalid_status():
     data['uid'] = uid + "__fake"
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
     print("Testing non-existent user: ")
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def make_awesome():
     data = {}
@@ -83,10 +83,10 @@ def make_awesome():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
 def get_firehose_key():
     data = {}
@@ -94,10 +94,10 @@ def get_firehose_key():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))   
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))   
     
 
 def get_minecraft_key_and_validate():
@@ -106,11 +106,11 @@ def get_minecraft_key_and_validate():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
     print("Getting Key: ")
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     key_file = json.loads(received)
 
@@ -124,11 +124,11 @@ def get_minecraft_key_and_validate():
         data['minecraft_key'] = key
 
         sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-        received = str(sock.recv(1024), "utf-8")
+        received = json.loads(str(sock.recv(1024), "utf-8"))
 
         
-        print("Sent:     {}".format(data))
-        print("Received: {}".format(received))
+        print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+        print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     else:
         print("Not Validating Key - no minecraft_key in response")
@@ -139,11 +139,11 @@ def get_firehose_key_and_return():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
     print("Getting Firehose Stream: ")
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     stream_info = json.loads(received)
 
@@ -157,11 +157,11 @@ def get_firehose_key_and_return():
         data['stream_name'] = name
 
         sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-        received = str(sock.recv(1024), "utf-8")
+        received = json.loads(str(sock.recv(1024), "utf-8"))
 
         
-        print("Sent:     {}".format(data))
-        print("Received: {}".format(received))
+        print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+        print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     else:
         print("Not Returning Key - no stream_name in response")
@@ -173,11 +173,11 @@ def get_firehose_key_and_disconnect():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
     print("Getting Firehose Stream: ")
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     stream_info = json.loads(received)
 
@@ -189,11 +189,11 @@ def get_firehose_key_and_disconnect():
     data['uid'] = uid
 
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = str(sock.recv(1024), "utf-8")
+    received = json.loads(str(sock.recv(1024), "utf-8"))
 
     
-    print("Sent:     {}".format(data))
-    print("Received: {}".format(received))
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
     
 
 
