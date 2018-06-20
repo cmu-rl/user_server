@@ -284,13 +284,13 @@ class mySQLLib:
 
 
     # Get firehose Key with UID
-    def getFirehoseKeyViaUID(self,uid):
+    def getFirehoseStreamNameViaUID(self,uid):
         if self.conn is None:
             # error
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT firehoseKey FROM user_table WHERE uid='%s'"%(uid))
+            cur.execute ("SELECT firehoseStreamName FROM user_table WHERE uid='%s'"%(uid))
             key = cur.fetchone()
             cur.close()
             if key is None:

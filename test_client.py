@@ -166,6 +166,34 @@ def get_firehose_key_and_return():
     else:
         print("Not Returning Key - no stream_name in response")
 
+
+def get_firehose_key_and_disconnect():
+    data = {}
+    data['cmd'] = 'get_firehose_key'
+    data['uid'] = uid
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    print("Getting Firehose Stream: ")
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
+
+    stream_info = json.loads(received)
+
+    
+    print("Disconnecting User: ")
+
+    data = {}
+    data['cmd'] = 'disconnect_user'
+    data['uid'] = uid
+
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = str(sock.recv(1024), "utf-8")
+
+    
+    print("Sent:     {}".format(data))
+    print("Received: {}".format(received))
     
 
 
@@ -198,6 +226,11 @@ while run:
 
     # Get a firehose stream from the pool and return it
     run_test(get_firehose_key_and_return)
+    print()
+
+    
+    # Get a firehose stream from the pool and disconnect them
+    run_test(get_firehose_key_and_disconnect)
     print()
 
 

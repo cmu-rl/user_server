@@ -129,12 +129,27 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
                     else: 
-                        if mcKey == request['minecraft_key']:
+                        if not mcKey is None and mcKey == request['minecraft_key']:
                             response['key_is_valid'] = True
                         else:
                             response['key_is_valid'] = False
-                            response['correct_key'] = mcKey
-                            response['given_key'] = request['minecraft_key']
+                else:
+                    response['error'] = True
+                    response['message'] = 'Request needs both <uid> and <key>'
+
+            ########         Player Dissconnect         ########
+            elif request['cmd'] == 'disconnect_user':
+                if 'uid' in request:
+                    try:
+                        streamName = playerDB.getFirehoseStreamNameViaUID(request['uid'])
+                    except Exception:
+                        response['error'] = True
+                        response['message'] = 'Error getting stream name by uid'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    else: 
+                        #TODO remove minecraftkey from player 
+                        playerDB.returnFirehoseStream(streamName, '12945920')
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
