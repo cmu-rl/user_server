@@ -272,10 +272,9 @@ class mySQLLib:
             # error
             pass
         else:
-            return 5
             cur= self.conn.cursor()
-            cur.execute ("SELECT count(id), SUM(inUse=0) AS countNotInUse;")
-            countNotInUse = cur.fetchone()
+            cur.execute ("SELECT COUNT(inUse) from stream_table WHERE inUse=0")
+            (countNotInUse,) = cur.fetchone()
             cur.close()
             return countNotInUse
 
@@ -413,9 +412,8 @@ if __name__ == '__main__':
     print ('Minecraft Key via UID               ',playerDB.getMinecraftKeyViaUID('1234'))
     print ('Minecraft Key via email             ',playerDB.getMinecraftKeyViaEmail('imushroom1@gmail.com'))
     print ('Minecraft Key via minecraft username',playerDB.getMinecraftKeyViaMinecraftUsername('imushroom1'))
-    print ('Firehose Key via UID                ',playerDB.getFirehoseKeyViaUID('1234'))
-    print ('Firehose Key via email              ',playerDB.getFirehoseKeyViaEmail('imushroom1@gmail.com'))
-    print ('Firehose Key via minecraft username ',playerDB.getFirehoseKeyViaMinecraftUsername('imushroom1'))
+    # print ('Firehose Key via UID                ',playerDB.getFirehoseKeyViaUID('1234'))
+
 
     playerDB.setMinecraftKeyViaUID(2345,'mnopqrstuv')
     playerDB.setMinecraftKeyViaMinecraftUsername('mountainBiker','stopit')
@@ -424,14 +422,16 @@ if __name__ == '__main__':
     print (playerDB.isUnique('imushroom1@gmail.com','imushroom1',1234))
     print (playerDB.isUnique('imushroom2@gmail.com','imushroom2',12345))
 
-    FirehsoeKey = '987654'
-    playerDB.setFirehoseKeyViaMinecraftUsername('mountainBiker',FirehsoeKey)
-    tmp = playerDB.getFirehoseKeyViaMinecraftUsername('mountainBiker')
-    if tmp == FirehsoeKey:
-        print ("setAWSViaMineCraftUsername: Success")
-    else:
-        print (FirehsoeKey,tmp)
-        print ("setAWSViaMineCraftUsername: FAILURE")
+    print (playerDB.getFirehoseStreamCount())
+
+    # FirehsoeKey = '987654'
+    # playerDB.setFirehoseKeyViaMinecraftUsername('mountainBiker', FirehsoeKey)
+    # tmp = playerDB.getFirehoseKeyViaMinecraftUsername('mountainBiker')
+    # if tmp == FirehsoeKey:
+    #     print ("setAWSViaMineCraftUsername: Success")
+    # else:
+    #     print (FirehsoeKey,tmp)
+    #     print ("setAWSViaMineCraftUsername: FAILURE")
 
     #playerDB.deleteUserViaEmail('ricky.houghton@gmail.com')
     playerDB.deleteUserviaMinecraftUsername('mountainBiker')
