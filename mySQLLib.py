@@ -261,11 +261,10 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE stream_table SET inUse=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
+            cur.execute ("UPDATE stream_table SET inUse='0',streamVersion='%s' WHERE streamName='%s'" % (version,name))
 
             self.conn.commit()
             cur.close()
-            return name
 
     def getFirehoseStreamCount(self):
         if self.conn is None:

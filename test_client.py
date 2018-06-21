@@ -17,7 +17,8 @@ def run_test(fn):
     try:
         fn()
         return True
-    except Exception:
+    except Exception as e:
+        print(e)
         return False
     
 

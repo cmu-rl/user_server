@@ -54,9 +54,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'add_user':
                 # TODO check if they exist but are 'removed' or 'banned', etc.
         
-                if 'email' in request and 'mcusername' in request:
+                if 'email' in request and 'uid' in request and 'mcusername' in request:
 
-                    uid = generateUserID(request['mcusername'])
+                    uid = request['uid']
 
                     #Check if user info is unique
                     if not all( playerDB.isUnique( request['email'], request['mcusername'], uid)):
