@@ -50,6 +50,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             #######          List Users          ########
             elif request['cmd'] == 'list_users':
                 response['list'] = playerDB.listUsers()
+                print(response)
 
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
