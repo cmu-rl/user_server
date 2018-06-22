@@ -152,6 +152,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     else: 
                         #TODO remove minecraftkey from player 
                         playerDB.returnFirehoseStream(streamName, '12945920')
+                        response['message'] = 'Returned stream {}'.format(streamName)
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'

@@ -124,12 +124,10 @@ def get_minecraft_key_and_validate():
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
-    key_file = json.loads(received)
-
-    if 'minecraft_key' in key_file:
+    if 'minecraft_key' in received:
         print("Validating Key: ")
 
-        key = key_file['minecraft_key']
+        key = received['minecraft_key']
         data = {}
         data['cmd'] = 'validate_minecraft_key'
         data['uid'] = uid
@@ -157,12 +155,11 @@ def get_firehose_key_and_return():
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
-    stream_info = json.loads(received)
 
-    if 'stream_name' in stream_info:
+    if 'stream_name' in received:
         print("Returning Stream: ")
 
-        name = stream_info['stream_name']
+        name = received['stream_name']
         data = {}
         data['cmd'] = 'return_firehose_key'
         data['uid'] = uid
@@ -190,8 +187,6 @@ def get_firehose_key_and_disconnect():
     print("Getting Firehose Stream: ")
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
-
-    stream_info = json.loads(received)
 
     
     print("Disconnecting User: ")
