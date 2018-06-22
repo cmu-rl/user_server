@@ -7,6 +7,8 @@ import hashlib
 
 HOST, PORT = "localhost", 9999
 #HOST, PORT = "18.206.147.166", 9999
+#HOST, PORT = "52.91.188.21", 9999
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(2)
 username = '1957295fdsahjklbfdjk'
@@ -26,6 +28,15 @@ def test_echo():
     data = {}
     data['cmd'] = 'echo'
     data['useless'] = 'thisisauselessstringofinfromationthatwillberemoved'
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = json.loads(str(sock.recv(1024), "utf-8"))
+
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
+
+def list_users():
+    data = {}
+    data['cmd'] = 'list_users'
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
     received = json.loads(str(sock.recv(1024), "utf-8"))
 
@@ -240,7 +251,11 @@ while run:
     print()
 
     # Try to get a status from an invalid user
-    run_test(get_invalid_status())
+    run_test(get_invalid_status)
+    print()
+
+
+    run_test(list_users)
     print()
 
     
