@@ -1,3 +1,4 @@
+#!/usr/bin/python3.6
 import boto3
 import json
 import random
