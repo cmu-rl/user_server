@@ -219,7 +219,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     sts = boto3.client('sts')
                     # TODO handle error when role cannot be assumed
                     sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
-                    role = sts.assume_role(RoleArn='arn:aws:iam::058861212628:role/iam_client_streamer', RoleSessionName=sessionName)
+                    role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName)
 
                     credentials = role['Credentials']
 
@@ -234,8 +234,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
 
                         # the role for firehose needs to have access to S3 - make policy that includes this
-                        roleARN =   'arn:aws:iam::058861212628:role/firehose_delivery_role'
-                        bucketARN = 'arn:aws:s3:::rickyfubar'
+                        roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
+                        bucketARN = ' arn:aws:s3:::deepmine-alpha-data'
 
 
                         # TODO stop naming streams with UID - think of better scheme

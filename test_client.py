@@ -6,7 +6,7 @@ import hashlib
 
 
 HOST, PORT = "localhost", 9999
-#HOST, PORT = "18.206.147.166", 9999
+HOST, PORT = "184.73.82.23", 9999
 #HOST, PORT = "52.91.188.21", 9999
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -248,6 +248,7 @@ while run:
     # Try to get a status from an invalid user
     run_test(get_invalid_status)
     print()
+
 
 
     run_test(list_users)
