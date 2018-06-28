@@ -57,26 +57,26 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 # TODO check if they exist but are 'removed' or 'banned', etc.
         
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
-
-                    uid = request['uid']
-
-                    #Check if user info is unique
-                    if not all( playerDB.isUnique( request['email'], request['mcusername'], uid)):
+                    unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
+                    if not all(unique_elements.values()):
+                        # User's info is not unique - return a helpfull message
                         response['unique'] = False
-                        status = playerDB.getStatus(uid)
+                        status = playerDB.getStatus(request['uid'])
 
-                        # User is allready added if they have a status 
-                        if status != 'invalid' and status != 'removed':
-                            # TODO support re-adding users who have been removed
+                        # User is allready added
+                        if unique_elements['minecraft_username'] == False:
                             response['error'] = True
                             response['message'] = 'Username is taken'
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
-
-                        elif status == 'invalid':
-                            # User has an invalid status - they likely don't exist yet
+                        elif unique_elements['email'] == False:
                             response['error'] = True
                             response['message'] = 'Email address is taken'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                        elif unique_elements['uid'] == False:
+                            response['error'] = True
+                            response['message'] = 'Hash collision in minecraft uuid'
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
 
@@ -84,7 +84,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     playerDB.addUser( \
                        request['email'],
                        request['mcusername'],
-                       uid)
+                       request['uid'])
 
                     response['error'] = False
                     #response['uid'] = uid
@@ -152,6 +152,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     else: 
                         #TODO remove minecraftkey from player 
                         playerDB.returnFirehoseStream(streamName, '12945920')
+                        playerDB.clearFirehoseStreamViaUID(request['uid'])
                         response['message'] = 'Returned stream {}'.format(streamName)
                 else:
                     response['error'] = True
@@ -217,9 +218,14 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 
                     # Get Session Token via AssumeRole
                     sts = boto3.client('sts')
-                    # TODO handle error when role cannot be assumed
-                    sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
-                    role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName)
+                    role = {}
+                    try:
+                        sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
+                        role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName)
+                    except sts.exceptions.ClientError as e:
+                        print('Error assuming role!')
+                        playerDB.returnFirehoseStream(streamName, 'err')
+                        return
 
                     credentials = role['Credentials']
 
@@ -256,7 +262,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         # If pool was empty, give the stream to the user
                         if not ('stream_name' in response):
                             response['stream_name'] = firehoseStreamName
-                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True)
+                            # TODO get actual version
+                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True, uid=uid)
                             
                         else: # Otherwise add this new stream to the pool
                             # TODO get actual version

@@ -217,7 +217,7 @@ class mySQLLib:
     # ##########################
 
     # Add firehose stream to the pool
-    def addFirehoseStream(self, name, version, inUse=0):
+    def addFirehoseStream(self, name, version, inUse=0, uid=None):
         if self.conn is None:
             # error
             pass
@@ -225,6 +225,10 @@ class mySQLLib:
             cur = self.conn.cursor()
             cur.execute("INSERT INTO stream_table (streamName, streamVersion, inUse) VALUES(%s,%s,%s)",(name, version, inUse,))
             self.conn.commit()
+
+            if not uid is None:
+                cur.execute("UPDATE user_table SET firehoseStreamName=%s WHERE uid=%s",(name,uid))
+                self.conn.commit()
             cur.close()
 
     # Get firehose stream from pool
@@ -241,15 +245,15 @@ class mySQLLib:
             name = cur.fetchone()
 
             # BAH testing 
-            print(name)
+            print(name[0])
 
             if name is None:
                 return None
             else:
-                cur.execute ("UPDATE stream_table SET inUse=1 WHERE streamName='%s'" % (name))
+                cur.execute ("UPDATE stream_table SET inUse=1 WHERE streamName='%s'" % (name[0]))
                 self.conn.commit()
                 cur.close()
-                return name
+                return name[0]
 
     # Takes a stream name that has been configured and puts it back in the pool
     # Streams must be versioned correctly! You must not add stream to pool until
@@ -278,7 +282,7 @@ class mySQLLib:
             return countNotInUse
 
     #########################
-    # FIREHOSE Commands (depricated)
+    # FIREHOSE Commands 
     ##########################
 
 
@@ -296,6 +300,16 @@ class mySQLLib:
                 return None
             else:
                 return key[0]
+
+    # Get firehose Key with UID
+    def clearFirehoseStreamNameViaUID(self,uid):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+            cur.execute ("UPDATE user_table SET firehoseStreamName = NULL WHERE uid='%s'"%(uid))
+            self.conn.commit()
 
    # Set (UPDATE) firehose Key with UID
     def setFirehoseKeyViaUID(self,uid,key):
@@ -325,7 +339,7 @@ class mySQLLib:
     # Is Unique 
     #########################
     def isUnique (self,email,minecraftUsername,uid):
-        status = []
+        status = {}
         if self.conn is None:
             # error
             pass
@@ -342,7 +356,7 @@ class mySQLLib:
                     tmp = False
             except:
                 tmp = True
-            status.append(tmp)
+            status['email'] = tmp
             try:
                 cur.execute ("SELECT id FROM user_table WHERE minecraftUsername='%d'"%(minecraftUsername))
                 (tmp,) = cur.fetchone()
@@ -353,7 +367,7 @@ class mySQLLib:
                     tmp = False
             except:
                 tmp = True
-            status.append(tmp)
+            status['minecraft_username'] = tmp
             try:
                 cur.execute ("SELECT id FROM user_table WHERE uid='%s'"%(uid))
                 (tmp,) = cur.fetchone()
@@ -364,7 +378,7 @@ class mySQLLib:
                     tmp = False
             except:
                 tmp = True
-            status.append(tmp)
+            status['uid']
             cur.close()
         return status
 
@@ -382,13 +396,15 @@ class mySQLLib:
             cur= self.conn.cursor()
             try:
                 cur.execute ("SELECT removed, banned, awesome, offQueue, id FROM user_table WHERE uid='%s'"%(uid))
-                (removed, banned, awesome, offQueue, id) = cur.fetchone()
-                if removed is None:
+                try:
+                    (removed, banned, awesome, offQueue, id) = cur.fetchone()
+                except ValueError() as e:
                     cur.close()
-                    return 'invalid'
+                    return {'invalid':True}                    
                 else:
                     cur.close()
                     status = {}
+                    status['invalid'] = False
                     status['removed'] = bool(removed)
                     status['banned'] = bool(banned)
                     status['awesome'] = bool(awesome)
@@ -396,8 +412,8 @@ class mySQLLib:
                     status['queue_position'] = int(id)
                     return status
             except:
-                return 'invalid'
-            cur.close()
+                return {'invalid':True}
+                cur.close()
 
 
 
