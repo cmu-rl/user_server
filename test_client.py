@@ -6,7 +6,7 @@ import hashlib
 
 
 HOST, PORT = "localhost", 9999
-#HOST, PORT = "184.73.82.23", 9999
+HOST, PORT = "184.73.82.23", 9999
 #HOST, PORT = "52.91.188.21", 9999
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

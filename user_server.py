@@ -241,7 +241,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                         # the role for firehose needs to have access to S3 - make policy that includes this
                         roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-                        bucketARN = ' arn:aws:s3:::deepmine-alpha-data'
+                        bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
 
 
                         # TODO stop naming streams with UID - think of better scheme

@@ -244,12 +244,13 @@ class mySQLLib:
             cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0")
             name = cur.fetchone()
 
-            # BAH testing 
-            print(name[0])
+            
 
             if name is None:
                 return None
             else:
+                # BAH testing 
+                print(name[0])
                 cur.execute ("UPDATE stream_table SET inUse=1 WHERE streamName='%s'" % (name[0]))
                 self.conn.commit()
                 cur.close()
