@@ -8,6 +8,8 @@ import datetime
 import mySQLLib
 import socketserver
 
+FIREHOSE_STREAM_MIN_AVAILABLE = 5
+
 def generateUserID(minecraftUUID):
     return hashlib.md5(minecraftUUID.encode('utf-8')).hexdigest()
 
@@ -152,7 +154,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     else: 
                         #TODO remove minecraftkey from player 
                         playerDB.returnFirehoseStream(streamName, '12945920')
-                        playerDB.clearFirehoseStreamViaUID(request['uid'])
+                        playerDB.clearFirehoseStreamNameViaUID(request['uid'])
                         response['message'] = 'Returned stream {}'.format(streamName)
                 else:
                     response['error'] = True
@@ -201,18 +203,32 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########        Get FireHose Key        ########
             elif request['cmd'] == 'get_firehose_key':
                 if 'uid' in request:
-
                     uid = request['uid']
 
-                    # TODO Validate UID
-                    if False:
-                        return
+                    status = playerDB.getStatus(uid)
+
+                    if 'invalid' in status:
+                        if status['invalid']:
+                            # UID is invalid - TODO don't respond 
+                            response['error'] = True
+                            response['message'] = 'Failed, uid is invalid'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                        elif status['banned']:
+                            response['error'] = False
+                            response['message'] = 'User is banned from play'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                        elif status['removed']:
+                            response['error'] = False
+                            response['message'] = 'User has been removed from the database'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                    else:
+                        print('error retreving status for user')
 
                     # Get key from pool
-                    # TODO store who checked out which key
                     streamName = playerDB.getFirehoseStream()
-
-                    # Check that we have a good stream
                     if not streamName is None:
                         response['stream_name'] = streamName
                 
@@ -233,19 +249,16 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # If we failed to find a stream in the pool or
                     # if the pool is too low, open a new FireHose Stream
-                    # TODO remove magic number (5)
                     if not 'stream_name' in response:
                         # Open FireHose Stream 
-                        # TODO handle error when stream is unable to be created
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
 
                         # the role for firehose needs to have access to S3 - make policy that includes this
                         roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
                         bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
 
-
                         # TODO stop naming streams with UID - think of better scheme
-                        firehoseStreamName = 'player_stream_' + str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
+                        firehoseStreamName = 'player_stream_' + generateSecureString(6) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
                         try:
                             createdFirehose = firehoseClient.create_delivery_stream(
                                 DeliveryStreamName = firehoseStreamName,
@@ -255,36 +268,63 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                                 })
                         except Exception as E:
                             # TODO handle exception with error message
-                            # TODO still give user a stream if this is an error
                             print (E)
-                            return
+                            firehoseStreamName = None
 
-                        # If pool was empty, give the stream to the user
+                        # If user did not get a stream, give the stream to the user
                         if not ('stream_name' in response):
                             response['stream_name'] = firehoseStreamName
                             # TODO get actual version
                             playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True, uid=uid)
-                            
-                        else: # Otherwise add this new stream to the pool
-                            # TODO get actual version
-                            playerDB.addFirehoseStream(firehoseStreamName,'12345678')
 
-
-
-                    # Send access tokens to requestor
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
                     response['session_token'] = credentials['SessionToken']
                     #TODO serialize expiriation object (below)
                     #response['expiration'] = credentials['Expiration']
 
-                    # Record stream and session id in database
+                    # Record stream and session id in database and send to player
                     playerDB.setFirehoseCredentialsViaUID(
                         uid, 
                         response['stream_name'],
                         response['access_key'], 
                         response['secret_key'], 
                         response['session_token'])
+                    socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+
+                    # Expand the pool if below the minimum size
+                    if playerDB.getFirehoseStreamCount() < FIREHOSE_STREAM_MIN_AVAILABLE:
+                        # Open FireHose Stream 
+                        firehoseClient = boto3.client('firehose', region_name='us-east-1')
+
+                        # the role for firehose needs to have access to S3 - make policy that includes this
+                        roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
+                        bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
+
+                        # TODO stop naming streams with UID - think of better scheme
+                        firehoseStreamName = 'player_stream_' + generateSecureString(6) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
+                        try:
+                            createdFirehose = firehoseClient.create_delivery_stream(
+                                DeliveryStreamName = firehoseStreamName,
+                                S3DestinationConfiguration = {
+                                    'RoleARN': roleARN,
+                                    'BucketARN': bucketARN
+                                })
+                        except Exception as E:
+                            # TODO handle exception with error message
+                            print (E)
+                            firehoseStreamName = None
+
+                        # If user did not get a stream, give the stream to the user
+                        if not ('stream_name' in response):
+                            response['stream_name'] = firehoseStreamName
+                            # TODO get actual version
+                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True, uid=uid)
+                         
+                                                    
+                        else: # Otherwise add this new stream to the pool
+                            # TODO get actual version
+                            playerDB.addFirehoseStream(firehoseStreamName,'12345678')
 
 
                 else:
