@@ -218,7 +218,7 @@ class mySQLLib:
 
     # Add firehose stream to the pool
     def addFirehoseStream(self, name, version, inUse=0, uid=None):
-        if self.conn is None:
+        if self.conn is None or name is None:
             # error
             pass
         else:
@@ -234,7 +234,7 @@ class mySQLLib:
     # Get firehose stream from pool
     # Returns None if no such stream is available
     #   or a valid streamName otherwise
-    def getFirehoseStream(self):
+    def getFirehoseStream(self, uid):
         if self.conn is None:
             # error
             pass
@@ -253,6 +253,8 @@ class mySQLLib:
                 print(name[0])
                 cur.execute ("UPDATE stream_table SET inUse=1 WHERE streamName='%s'" % (name[0]))
                 self.conn.commit()
+                cur.execute("UPDATE user_table SET firehoseStreamName='%s' WHERE uid='%s'" % (name[0],uid))
+                self.conn.commit()
                 cur.close()
                 return name[0]
 
@@ -266,7 +268,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE stream_table SET inUse='0',streamVersion='%s' WHERE streamName='%s'" % (version,name))
+            cur.execute ("UPDATE stream_table SET inUse=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
 
             self.conn.commit()
             cur.close()
@@ -313,13 +315,13 @@ class mySQLLib:
             self.conn.commit()
 
    # Set (UPDATE) firehose Key with UID
-    def setFirehoseKeyViaUID(self,uid,key):
+    def setFirehoseStreamNameViaUID(self,uid,key):
         if self.conn is None:
             # error
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE user_table SET firehose='%s' WHERE uid='%s'" % (key,uid))
+            cur.execute ("UPDATE user_table SET firehoseStreamName='%s' WHERE uid='%s'" % (key,uid))
             self.conn.commit()
             cur.close()
 

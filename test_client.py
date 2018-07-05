@@ -93,18 +93,7 @@ def make_awesome():
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
     received = json.loads(str(sock.recv(1024), "utf-8"))
-    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
-
-def get_firehose_key():
-    data = {}
-    data['cmd'] = 'get_firehose_key'
-    data['uid'] = uid
-
-    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
-    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    received = json.loads(str(sock.recv(1024), "utf-8"))
-    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))   
-    
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))    
 
 def get_minecraft_key_and_validate():
     data = {}
@@ -165,25 +154,27 @@ def get_firehose_key_and_return():
     else:
         print("Not Returning Key - no stream_name in response")
 
-
-def get_firehose_key_and_disconnect():
+def get_firehose_key():
     data = {}
     data['cmd'] = 'get_firehose_key'
     data['uid'] = uid
 
-    print("Getting Firehose Stream: ")
+    print("### Getting Firehose Stream: ")
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
     received = json.loads(str(sock.recv(1024), "utf-8"))
     print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
 
     
+def disconnect_user():
     print("Disconnecting User: ")
 
     data = {}
     data['cmd'] = 'disconnect_user'
     data['uid'] = uid
     
+
+    print("### Disconnecting User: ")
     print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
     sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
     received = json.loads(str(sock.recv(1024), "utf-8"))
@@ -218,13 +209,16 @@ while run:
     run_test(get_minecraft_key_and_validate)
     print()
 
-    # Get a firehose stream from the pool and return it
-    run_test(get_firehose_key_and_return)
-    print()
+    # # Get a firehose stream from the pool and return it
+    # run_test(get_firehose_key_and_return)
+    # print()
 
     
     # Get a firehose stream from the pool and disconnect them
-    run_test(get_firehose_key_and_disconnect)
+    run_test(get_firehose_key)
+    print()
+
+    run_test(disconnect_user)
     print()
 
 
@@ -235,7 +229,6 @@ while run:
     # Try to get a status from an invalid user
     run_test(get_invalid_status)
     print()
-
 
 
     run_test(list_users)

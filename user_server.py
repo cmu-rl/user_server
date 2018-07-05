@@ -228,7 +228,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         print('error retreving status for user')
 
                     # Get key from pool
-                    streamName = playerDB.getFirehoseStream()
+                    streamName = playerDB.getFirehoseStream(uid)
                     if not streamName is None:
                         response['stream_name'] = streamName
                 
@@ -247,8 +247,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # TODO if there was an error creating sesion credentials give the stream back
 
-                    # If we failed to find a stream in the pool or
-                    # if the pool is too low, open a new FireHose Stream
+                    # If we failed to find a stream in the pool open a new FireHose Stream
                     if not 'stream_name' in response:
                         # Open FireHose Stream 
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
@@ -264,18 +263,21 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                                 DeliveryStreamName = firehoseStreamName,
                                 S3DestinationConfiguration = {
                                     'RoleARN': roleARN,
-                                    'BucketARN': bucketARN
+                                    'BucketARN': bucketARN,
+                                    'BufferingHints': {
+                                        'SizeInMBs': 128,
+                                        'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                                    }
                                 })
                         except Exception as E:
                             # TODO handle exception with error message
                             print (E)
+                            response['error'] = True
                             firehoseStreamName = None
-
-                        # If user did not get a stream, give the stream to the user
-                        if not ('stream_name' in response):
+                        else:
                             response['stream_name'] = firehoseStreamName
                             # TODO get actual version
-                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True, uid=uid)
+                            playerDB.addFirehoseStream(firehoseStreamName,'1234567', inUse=True, uid=uid)
 
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
@@ -308,23 +310,20 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                                 DeliveryStreamName = firehoseStreamName,
                                 S3DestinationConfiguration = {
                                     'RoleARN': roleARN,
-                                    'BucketARN': bucketARN
+                                    'BucketARN': bucketARN,
+                                    'BufferingHints': {
+                                        'SizeInMBs': 128,
+                                        'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                                    }
                                 })
                         except Exception as E:
                             # TODO handle exception with error message
                             print (E)
-                            firehoseStreamName = None
-
-                        # If user did not get a stream, give the stream to the user
-                        if not ('stream_name' in response):
-                            response['stream_name'] = firehoseStreamName
-                            # TODO get actual version
-                            playerDB.addFirehoseStream(firehoseStreamName,'12345678', inUse=True, uid=uid)
-                         
-                                                    
-                        else: # Otherwise add this new stream to the pool
+                            firehoseStreamName = None                                                   
+                        else: 
                             # TODO get actual version
                             playerDB.addFirehoseStream(firehoseStreamName,'12345678')
+                    return
 
 
                 else:
@@ -350,6 +349,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # Return key to pool
                     playerDB.returnFirehoseStream(streamName, '123456')
+                    response['message'] = "Stream " + streamName + " returned sucessfully"
+                else:
+                    response['error'] = True
+                    response['message'] = "Stream name or uid not provided"
 
 
 

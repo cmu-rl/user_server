@@ -46,11 +46,11 @@ import time
 #       (http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
 
 # Get Session Credentials
-HOST, PORT = "18.206.147.166", 9999
+HOST, PORT = "184.73.82.23", 9999
 
 data = {}
 data['cmd'] = 'get_firehose_key'
-data['uid'] = '0123456789'
+data['uid'] = '40474956106ff5bae7cdbbadf6f4e31a'
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(2)
@@ -96,7 +96,7 @@ def put_to_stream(thing_id, property_value, property_timestamp):
     print ( put_response )
 
 
-for _ in range(100):
+for _ in range(10000):
     property_value = random.randint(40, 120)
     property_timestamp = calendar.timegm(datetime.utcnow().timetuple())
     thing_id = 'aa-bb'
@@ -104,7 +104,7 @@ for _ in range(100):
     put_to_stream(thing_id, property_value, property_timestamp)
 
     # wait for 5 second
-    time.sleep(5)
+    time.sleep(0.5)
 
 
 exit (0)
