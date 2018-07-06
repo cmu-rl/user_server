@@ -6,6 +6,7 @@ import string
 import hashlib
 import datetime
 import mySQLLib
+import hriLib
 import socketserver
 
 FIREHOSE_STREAM_MIN_AVAILABLE = 5
@@ -15,6 +16,9 @@ def generateUserID(minecraftUUID):
 
 def generateSecureString(len):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
+
+def generateSecureFruitString():
+    return hriLib.getString()
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -304,7 +308,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
 
                         # TODO stop naming streams with UID - think of better scheme
-                        firehoseStreamName = 'player_stream_' + generateSecureString(6) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
+                        firehoseStreamName = 'player_stream_' + generateSecureFruitString() + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
                         try:
                             createdFirehose = firehoseClient.create_delivery_stream(
                                 DeliveryStreamName = firehoseStreamName,
@@ -377,5 +381,5 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
 if __name__ == "__main__":
     HOST, PORT = "0.0.0.0", 9999
-    with socketserver.UDPServer((HOST, PORT), MyUDPHandler) as server:
+    with socketserver.ThreadingUDPServer((HOST, PORT), MyUDPHandler) as server:
         server.serve_forever()
