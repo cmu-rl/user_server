@@ -152,7 +152,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE user_table SET minecraftKey='%s' WHERE uid='%s'" % (key, uid,))
+            cur.execute ("UPDATE user_table SET minecraftKey='%s' WHERE uid='%s'" % (key, uid))
             self.conn.commit()
             cur.close()
 
