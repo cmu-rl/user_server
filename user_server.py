@@ -196,8 +196,32 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             ########           Get MC Key           ########
             elif request['cmd'] == 'get_minecraft_key':
-                minecraft_key = generateSecureString(45)
-                if 'uid' in request:
+                if 'uid' in request and request['uid'] != None:
+                    uid = request['uid']
+
+                    status = playerDB.getStatus(uid)
+
+                    if 'invalid' in status:
+                        if status['invalid']:
+                            # UID is invalid - TODO don't respond 
+                            response['error'] = True
+                            response['message'] = 'Failed, uid is invalid'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                        elif status['banned']:
+                            response['error'] = False
+                            response['message'] = 'User is banned from play'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                        elif status['removed']:
+                            response['error'] = False
+                            response['message'] = 'User has been removed from the database'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
+                    else:
+                        print('error retreving status for user')
+
+                    minecraft_key = generateSecureString(45)
                     playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
                 else:
