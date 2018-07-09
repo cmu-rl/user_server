@@ -20,6 +20,34 @@ def generateSecureString(len):
 def generateSecureFruitString():
     return hriLib.getString()
 
+def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
+    # Role for firehose needs to have access to S3 - make policy that includes this
+    roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
+    bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
+
+    firehoseStreamName = 'player_stream_' + generateSecureString(6)   
+    try:
+        createdFirehose = firehoseClient.create_delivery_stream(
+            DeliveryStreamName = firehoseStreamName,
+            S3DestinationConfiguration = {
+                'RoleARN': roleARN,
+                'BucketARN': bucketARN,
+                'BufferingHints': {
+                    'SizeInMBs': 128,
+                    'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                }
+            })
+    except Exception as E:
+        print (E)
+        response['error'] = True
+        firehoseStreamName = None
+    else:
+        streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=firehoseStreamName)
+        versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+        playerDB.addFirehoseStream(firehoseStreamName,versionID, inUse=inUse, uid=uid)
+        return firehoseStreamName
+    return
+
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
@@ -277,35 +305,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # If we failed to find a stream in the pool open a new FireHose Stream
                     if not 'stream_name' in response:
-                        # Open FireHose Stream 
+                        # Open FireHose Client
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                        response['stream_name'] = crateFirehoseStream(playerDB, firehoseClient,inUse = True, uid = uid)
 
-                        # the role for firehose needs to have access to S3 - make policy that includes this
-                        roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-                        bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
-
-                        # TODO stop naming streams with UID - think of better scheme
-                        firehoseStreamName = 'player_stream_' + generateSecureString(6) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
-                        try:
-                            createdFirehose = firehoseClient.create_delivery_stream(
-                                DeliveryStreamName = firehoseStreamName,
-                                S3DestinationConfiguration = {
-                                    'RoleARN': roleARN,
-                                    'BucketARN': bucketARN,
-                                    'BufferingHints': {
-                                        'SizeInMBs': 128,
-                                        'IntervalInSeconds': 60 # TODO set to 900 for deploy
-                                    }
-                                })
-                        except Exception as E:
-                            # TODO handle exception with error message
-                            print (E)
-                            response['error'] = True
-                            firehoseStreamName = None
-                        else:
-                            response['stream_name'] = firehoseStreamName
-                            # TODO get actual version
-                            playerDB.addFirehoseStream(firehoseStreamName,'1234567', inUse=True, uid=uid)
 
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
@@ -324,33 +327,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # Expand the pool if below the minimum size
                     if playerDB.getFirehoseStreamCount() < FIREHOSE_STREAM_MIN_AVAILABLE:
-                        # Open FireHose Stream 
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
-
-                        # the role for firehose needs to have access to S3 - make policy that includes this
-                        roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-                        bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
-
-                        # TODO stop naming streams with UID - think of better scheme
-                        firehoseStreamName = 'player_stream_' + generateSecureFruitString() + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")   
-                        try:
-                            createdFirehose = firehoseClient.create_delivery_stream(
-                                DeliveryStreamName = firehoseStreamName,
-                                S3DestinationConfiguration = {
-                                    'RoleARN': roleARN,
-                                    'BucketARN': bucketARN,
-                                    'BufferingHints': {
-                                        'SizeInMBs': 128,
-                                        'IntervalInSeconds': 60 # TODO set to 900 for deploy
-                                    }
-                                })
-                        except Exception as E:
-                            # TODO handle exception with error message
-                            print (E)
-                            firehoseStreamName = None                                                   
-                        else: 
-                            # TODO get actual version
-                            playerDB.addFirehoseStream(firehoseStreamName,'12345678')
+                        crateFirehoseStream(playerDB, firehoseClient)
                     return
 
 
@@ -368,15 +346,35 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # TODO Validate UID
                     if False:
                         return
+                    
+                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
+                    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+                    currentStreamName = playerDB.getFirehoseStreamVersion(request['stream_name'])
+                    if (currentStreamName is None or versionID != currentStreamName):
+                        print("Stream version is inconsistent actuall is " +  versionID + " but database says " + currentStreamName)
+                        response['error'] = True
+                        response['message'] = "Stream name is invalid"
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
 
-                    # TODO process returned stream name
+                    # TODO handle error when stream version is malformated in code
+                    firehoseClient.update_destination(
+                        CurrentDeliveryStreamVersionId=versionID,
+                        S3DestinationConfiguration = {
+                            'BufferingHints': {
+                                'SizeInMBs': 128,
+                                'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                            }
+                        })
 
                     # TODO validate that stream name was in the pool allready
 
                     # TODO Validate uid that checked it out is returning it (maybe)
 
                     # Return key to pool
-                    playerDB.returnFirehoseStream(streamName, '123456')
+                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
+                    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+                    playerDB.returnFirehoseStream(streamName, versionID)
                     response['message'] = "Stream " + streamName + " returned sucessfully"
                 else:
                     response['error'] = True

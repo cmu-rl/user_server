@@ -288,7 +288,20 @@ class mySQLLib:
     # FIREHOSE Commands 
     ##########################
 
-
+    # Get firehose stream version
+    def getFirehoseStreamVersion(self, streamName):
+        if self.conn is None:
+                pass
+        else:
+            cur= self.conn.cursor()
+            cur.execute ("SELECT streamVersion FROM stream_table WHERE streamName='%s'"%(streamName))
+            name = cur.fetchone()
+            cur.close()
+            if key is None:
+                return None
+            else:
+                return name[0]
+                    
     # Get firehose Key with UID
     def getFirehoseStreamNameViaUID(self,uid):
         if self.conn is None:
