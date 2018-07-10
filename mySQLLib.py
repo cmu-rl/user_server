@@ -262,7 +262,7 @@ class mySQLLib:
     # Streams must be versioned correctly! You must not add stream to pool until
     # stream version matches that returnd by the changeStream function (if called)
     # name must be unique
-    def returnFirehoseStream(self, name, version,    = False):
+    def returnFirehoseStream(self, name, version, outdated = False):
         if self.conn is None:
             # error
             pass
