@@ -87,14 +87,14 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
                 # TODO check if they exist but are 'removed' or 'banned', etc.
-                response['error'] = True
-                response['message'] = 'You called add user'
-                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                return
         
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
                     unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
                     if not all(unique_elements.values()):
+                        response['error'] = True
+                        response['message'] = 'You are not unique'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
                         # User's info is not unique - return a helpfull message
                         response['unique'] = False
                         status = playerDB.getStatus(request['uid'])
