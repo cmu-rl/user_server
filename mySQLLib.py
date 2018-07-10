@@ -156,7 +156,7 @@ class mySQLLib:
             self.conn.commit()
             cur.close()
 
-    def setMinecraftKeyViaUID(self,uid):
+    def clearMinecraftKeyViaUID(self,uid):
         if self.conn is None:
             # error
             pass
@@ -164,7 +164,7 @@ class mySQLLib:
             cur= self.conn.cursor()
             cur.execute ("UPDATE user_table SET minecraftKey=null WHERE uid='%s'" % (uid))
             self.conn.commit()
-            cur.close()v
+            cur.close()
 
     # Set (UPDATE) minecraft Key with minecraft username
     def setMinecraftKeyViaMinecraftUsername(self,minecraftUsername,key):
