@@ -394,7 +394,7 @@ class mySQLLib:
                     tmp = False
             except:
                 tmp = True
-            status['uid']
+            status['uid'] = tmp
             cur.close()
         return status
 
