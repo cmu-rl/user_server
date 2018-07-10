@@ -56,7 +56,7 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
     destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
-    currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
+    currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
     print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
 
     if (currentStreamVersion is None or versionID != currentStreamVersion):
