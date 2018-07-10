@@ -344,7 +344,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # TODO Validate UID
                     if False:
                         return
-                    
+                    firehoseClient = boto3.client('firehose', region_name='us-east-1')
                     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
                     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
                     currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
