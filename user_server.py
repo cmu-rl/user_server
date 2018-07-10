@@ -89,49 +89,58 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 # TODO check if they exist but are 'removed' or 'banned', etc.
         
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
-                    unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
-                    if not all(unique_elements.values()):
-                        response['error'] = True
+
+                    response['error'] = True
                         response['message'] = 'You are not unique'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                        # User's info is not unique - return a helpfull message
-                        response['unique'] = False
-                        status = playerDB.getStatus(request['uid'])
+                    try:
+                        unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
+                        if not all(unique_elements.values()):
+                            
+                            # User's info is not unique - return a helpfull message
+                            response['unique'] = False
+                            status = playerDB.getStatus(request['uid'])
 
-                        # User is allready added
-                        if unique_elements['minecraft_username'] == False:
-                            response['error'] = True
-                            response['message'] = 'Username is taken'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif unique_elements['email'] == False:
-                            response['error'] = True
-                            response['message'] = 'Email address is taken'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif unique_elements['uid'] == False:
-                            response['error'] = True
-                            response['message'] = 'Hash collision in minecraft uuid'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        else:
-                            response['error'] = True
-                            response['message'] = 'Unknown error'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
+                            # User is allready added
+                            if unique_elements['minecraft_username'] == False:
+                                response['error'] = True
+                                response['message'] = 'Username is taken'
+                                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                                return
+                            elif unique_elements['email'] == False:
+                                response['error'] = True
+                                response['message'] = 'Email address is taken'
+                                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                                return
+                            elif unique_elements['uid'] == False:
+                                response['error'] = True
+                                response['message'] = 'Hash collision in minecraft uuid'
+                                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                                return
+                            else:
+                                response['error'] = True
+                                response['message'] = 'Unknown error'
+                                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                                return
 
-                    # Add the user to the database
-                    playerDB.addUser( \
-                       request['email'],
-                       request['mcusername'],
-                       request['uid'])
+                        # Add the user to the database
+                        playerDB.addUser( \
+                        request['email'],
+                        request['mcusername'],
+                        request['uid'])
 
-                    response['error'] = False
-                    #response['uid'] = uid
-                    response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
-                    socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                    return
+                        response['error'] = False
+                        #response['uid'] = uid
+                        response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    except Exception as e:
+                        response['error'] = True
+                        response['message'] = repr(e)
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    
                 else:    
                     response['error'] = True
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
