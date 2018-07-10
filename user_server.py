@@ -87,6 +87,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
                 # TODO check if they exist but are 'removed' or 'banned', etc.
+                response['error'] = True
+                response['message'] = 'You called add user'
+                socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                return
         
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
                     unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
@@ -127,6 +131,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     #response['uid'] = uid
                     response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                    return
                 else:    
                     response['error'] = True
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
