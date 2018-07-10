@@ -156,6 +156,16 @@ class mySQLLib:
             self.conn.commit()
             cur.close()
 
+    def setMinecraftKeyViaUID(self,uid):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+            cur.execute ("UPDATE user_table SET minecraftKey=null WHERE uid='%s'" % (uid))
+            self.conn.commit()
+            cur.close()v
+
     # Set (UPDATE) minecraft Key with minecraft username
     def setMinecraftKeyViaMinecraftUsername(self,minecraftUsername,key):
         if self.conn is None:

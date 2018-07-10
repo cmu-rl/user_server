@@ -46,6 +46,47 @@ def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
         playerDB.addFirehoseStream(firehoseStreamName,versionID, inUse=inUse, uid=uid)
         return firehoseStreamName
 
+def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
+    # TODO Validate UID
+    if False:
+        return
+
+    # TODO Validate stream is checked out
+
+    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+    destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
+    currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
+    print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
+
+    if (currentStreamVersion is None or versionID != currentStreamVersion):
+        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
+        # response['error'] = True
+        # response['message'] = "Stream name is invalid"
+        # socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+        # return
+
+    firehoseClient.update_destination(
+        DeliveryStreamName=streamName,
+        CurrentDeliveryStreamVersionId = versionID,
+        DestinationId = destinationId,
+        S3DestinationUpdate = {
+            'BufferingHints': {
+                'SizeInMBs': 128,
+                'IntervalInSeconds': 60 # TODO set to 900 for deploy
+            }
+        })
+    # Return key to pool
+    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+    newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
+    if (versionID == newVersionID):
+        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
+    else:
+        playerDB.returnFirehoseStream(streamName,newVersionID, outdated = False)
+
+    playerDB.clearFirehoseStreamNameViaUID(uid)
+    print("Stream version is now " +  newVersionID)
+
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
@@ -186,7 +227,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
 
-            ########         Player Dissconnect         ########
+            ########         Player Disconnect         ########
             elif request['cmd'] == 'disconnect_user':
                 if 'uid' in request:
                     try:
@@ -197,10 +238,14 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
                     else: 
-                        #TODO remove minecraftkey from player 
-                        #playerDB.returnFirehoseStream(streamName, '12945920')
-                        #playerDB.clearFirehoseStreamNameViaUID(request['uid'])
-                        response['message'] = 'Returned stream {}'.format(streamName)
+                        uid = request['uid']
+
+                        playerDB.clearMinecraftKeyViaUID(uid)
+
+                        #firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                        #returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
+
+                        response['message'] = 'Returned stream {} and minecraft key for user {}'.format(streamName, uid)
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
@@ -352,52 +397,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########       Return FireHose Key       ########
             elif request['cmd'] == 'return_firehose_key':
                 if 'uid' in request and 'stream_name' in request:
+                    # TODO Validate uid that checked it out is returning it (maybe)
 
                     uid = request['uid']
                     streamName = request['stream_name']
-
-                    # TODO Validate UID
-                    if False:
-                        return
                     firehoseClient = boto3.client('firehose', region_name='us-east-1')
-                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
-                    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
-                    destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
-                    currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
-                    print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
 
-                    if (currentStreamVersion is None or versionID != currentStreamVersion):
-                        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
-                        # response['error'] = True
-                        # response['message'] = "Stream name is invalid"
-                        # socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                        # return
-
-                    firehoseClient.update_destination(
-                        DeliveryStreamName=streamName,
-                        CurrentDeliveryStreamVersionId = versionID,
-                        DestinationId = destinationId,
-                        S3DestinationUpdate = {
-                            'BufferingHints': {
-                                'SizeInMBs': 128,
-                                'IntervalInSeconds': 60 # TODO set to 900 for deploy
-                            }
-                        })
-
-                    # TODO validate that stream name was in the pool allready
-
-                    # TODO Validate uid that checked it out is returning it (maybe)
-
-                    # Return key to pool
-                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
-                    newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
-                    if (versionID == newVersionID):
-                        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
-                    else:
-                        playerDB.returnFirehoseStream(streamName,newVersionID, outdated = False)
-
-                    playerDB.clearFirehoseStreamNameViaUID(uid)
-                    print("Stream version is now " +  newVersionID)
+                    returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
 
                     response['message'] = "Stream " + streamName + " returned sucessfully"
                 else:
@@ -423,7 +429,19 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         print("{} wrote:".format(self.client_address[0]))
         print(data)
 
+    def handle_error(self, request, client_address):
+        data = self.request[0]
+        socket = self.request[1]
         
+        response = {}
+        response['error'] = True
+        response['message'] = "Exception processing request " + data
+        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+
+        print (data)
+        socketserver.ThreadingUDPServer.handle_error(self, request, client_address)
+
+            
 
 if __name__ == "__main__":
     HOST, PORT = "0.0.0.0", 9999
