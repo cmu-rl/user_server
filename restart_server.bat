@@ -4,3 +4,4 @@ cd ~/user_server/
 git pull
 sudo systemctl daemon-reload
 sudo service user_server start
+sudo service user_server status

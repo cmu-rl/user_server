@@ -89,11 +89,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                 # TODO check if they exist but are 'removed' or 'banned', etc.
         
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
-
-                    response['error'] = True
-                    response['message'] = 'You are not unique'
-                    socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                    return
                     try:
                         unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
                         if not all(unique_elements.values()):
