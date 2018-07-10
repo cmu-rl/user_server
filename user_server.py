@@ -111,6 +111,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             response['message'] = 'Hash collision in minecraft uuid'
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
+                        else:
+                            response['error'] = True
+                            response['message'] = 'Unknown error'
+                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                            return
 
                     # Add the user to the database
                     playerDB.addUser( \
@@ -121,6 +126,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     response['error'] = False
                     #response['uid'] = uid
                     response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
+                    socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                 else:    
                     response['error'] = True
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
