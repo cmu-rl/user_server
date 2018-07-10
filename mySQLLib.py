@@ -262,14 +262,16 @@ class mySQLLib:
     # Streams must be versioned correctly! You must not add stream to pool until
     # stream version matches that returnd by the changeStream function (if called)
     # name must be unique
-    def returnFirehoseStream(self, name, version):
+    def returnFirehoseStream(self, name, version,    = False):
         if self.conn is None:
             # error
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("UPDATE stream_table SET inUse=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
-
+            if outdated:
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s' WHERE streamName='%s'" % (version,name))
+            else:
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
             self.conn.commit()
             cur.close()
 

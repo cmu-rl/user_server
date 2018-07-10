@@ -360,21 +360,24 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     if False:
                         return
                     firehoseClient = boto3.client('firehose', region_name='us-east-1')
-                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
+                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
                     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+                    destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
                     currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
                     print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
 
-                    if (currentStreamName is None or versionID != currentStreamVersion):
-                        print("Stream version is inconsistent actual is " +  versionID + " but database says " + currentStreamVersion)
-                        response['error'] = True
-                        response['message'] = "Stream name is invalid"
-                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                        return
+                    if (currentStreamVersion is None or versionID != currentStreamVersion):
+                        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
+                        # response['error'] = True
+                        # response['message'] = "Stream name is invalid"
+                        # socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        # return
 
                     firehoseClient.update_destination(
+                        DeliveryStreamName=streamName,
                         CurrentDeliveryStreamVersionId = versionID,
-                        S3DestinationConfiguration = {
+                        DestinationId = destinationId,
+                        S3DestinationUpdate = {
                             'BufferingHints': {
                                 'SizeInMBs': 128,
                                 'IntervalInSeconds': 60 # TODO set to 900 for deploy
@@ -386,11 +389,15 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # TODO Validate uid that checked it out is returning it (maybe)
 
                     # Return key to pool
-                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
-                    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
-                    playerDB.returnFirehoseStream(streamName, versionID)
+                    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+                    newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
+                    if (versionID == newVersionID):
+                        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
+                    else:
+                        playerDB.returnFirehoseStream(streamName,newVersionID, outdated = False)
+
                     playerDB.clearFirehoseStreamNameViaUID(uid)
-                    print("Stream version is now " +  versionID)
+                    print("Stream version is now " +  newVersionID)
 
                     response['message'] = "Stream " + streamName + " returned sucessfully"
                 else:
