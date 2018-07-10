@@ -185,13 +185,16 @@ def disconnect_user():
 run = True
 while run:
 
-    # data = {"cmd":"return_firehose_key","uid":"40474956106ff5bae7cdbbadf6f4e31a","stream_name":"player_stream_WAA3VA_06_29_20_00_41"}
-    # print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
-    # sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
-    # received = json.loads(str(sock.recv(1024), "utf-8"))
-    # print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
-    # exit()
+    data = {"cmd":"return_firehose_key","uid":"40474956106ff5bae7cdbbadf6f4e31a","stream_name":"player_stream_JR4TS9_06_29_20_26_56"}
+    print("Sent:     {}".format(json.dumps(data, indent=4, sort_keys=True)))
+    sock.sendto(bytes(json.dumps(data), "utf-8"), (HOST, PORT))
+    received = json.loads(str(sock.recv(1024), "utf-8"))
+    print("Received: {}".format(json.dumps(received, indent=4, sort_keys=True)))
+    exit()
+
     
+
+
     # Ping the user server with echo command
     run_test(test_echo)
     print()

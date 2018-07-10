@@ -198,8 +198,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         return
                     else: 
                         #TODO remove minecraftkey from player 
-                        playerDB.returnFirehoseStream(streamName, '12945920')
-                        playerDB.clearFirehoseStreamNameViaUID(request['uid'])
+                        #playerDB.returnFirehoseStream(streamName, '12945920')
+                        #playerDB.clearFirehoseStreamNameViaUID(request['uid'])
                         response['message'] = 'Returned stream {}'.format(streamName)
                 else:
                     response['error'] = True
