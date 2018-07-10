@@ -297,7 +297,7 @@ class mySQLLib:
             cur.execute ("SELECT streamVersion FROM stream_table WHERE streamName='%s'"%(streamName))
             name = cur.fetchone()
             cur.close()
-            if key is None:
+            if name is None:
                 return None
             else:
                 return name[0]

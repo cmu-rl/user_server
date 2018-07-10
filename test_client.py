@@ -210,8 +210,8 @@ while run:
     print()
 
     # # Get a firehose stream from the pool and return it
-    # run_test(get_firehose_key_and_return)
-    # print()
+    run_test(get_firehose_key_and_return)
+    print()
 
     
     # Get a firehose stream from the pool and disconnect them

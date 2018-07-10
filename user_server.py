@@ -25,7 +25,7 @@ def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
     roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
     bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
 
-    firehoseStreamName = 'player_stream_' + generateSecureString(6)   
+    firehoseStreamName = 'player_stream_' + generateSecureFruitString()   
     try:
         createdFirehose = firehoseClient.create_delivery_stream(
             DeliveryStreamName = firehoseStreamName,
@@ -39,14 +39,12 @@ def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
             })
     except Exception as E:
         print (E)
-        response['error'] = True
-        firehoseStreamName = None
+        return None
     else:
         streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=firehoseStreamName)
         versionID = streamStatus['DeliveryStreamDescription']['VersionId']
         playerDB.addFirehoseStream(firehoseStreamName,versionID, inUse=inUse, uid=uid)
         return firehoseStreamName
-    return
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -349,17 +347,18 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     
                     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
                     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
-                    currentStreamName = playerDB.getFirehoseStreamVersion(request['stream_name'])
-                    if (currentStreamName is None or versionID != currentStreamName):
-                        print("Stream version is inconsistent actuall is " +  versionID + " but database says " + currentStreamName)
+                    currentStreamVersion = playerDB.getFirehoseStreamVersion(request['stream_name'])
+                    print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
+
+                    if (currentStreamName is None or versionID != currentStreamVersion):
+                        print("Stream version is inconsistent actual is " +  versionID + " but database says " + currentStreamVersion)
                         response['error'] = True
                         response['message'] = "Stream name is invalid"
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
 
-                    # TODO handle error when stream version is malformated in code
                     firehoseClient.update_destination(
-                        CurrentDeliveryStreamVersionId=versionID,
+                        CurrentDeliveryStreamVersionId = versionID,
                         S3DestinationConfiguration = {
                             'BufferingHints': {
                                 'SizeInMBs': 128,
@@ -375,6 +374,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName='stream_name')
                     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
                     playerDB.returnFirehoseStream(streamName, versionID)
+                    playerDB.clearFirehoseStreamNameViaUID(uid)
+                    print("Stream version is now " +  versionID)
+
                     response['message'] = "Stream " + streamName + " returned sucessfully"
                 else:
                     response['error'] = True
