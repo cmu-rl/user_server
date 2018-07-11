@@ -226,6 +226,20 @@ class mySQLLib:
     # # AWS Stream Commands
     # ##########################
 
+    def listStreams(self):
+        if self.conn is None:
+            # error
+            print ("Player Database is not open")
+            pass
+        else:
+            playerStreams = []
+
+            cur = self.conn.cursor()
+            cur.execute("SELECT streamName FROM stream_table ORDER by id") # We aren't achieving sorting as expected- why is this?
+            for row in cur:
+                playerStreams.append(row[0])
+            return playerStreams
+
     # Add firehose stream to the pool
     def addFirehoseStream(self, name, version, inUse=0, uid=None):
         if self.conn is None or name is None:
@@ -295,6 +309,15 @@ class mySQLLib:
             (countNotInUse,) = cur.fetchone()
             cur.close()
             return countNotInUse
+
+    def deleteFirehoseStream(self, streamName):
+        if self.conn is None:
+            pass
+        else:
+            cur = self.conn.cursor()
+            cur.execute("DELETE FROM stream_table WHERE streamName='%s';"%(streamName))
+            self.conn.commit()
+            cur.close()
 
     #########################
     # FIREHOSE Commands 
