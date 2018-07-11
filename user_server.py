@@ -1,5 +1,6 @@
 #!/usr/bin/python3.6
 import boto3
+import time
 import json
 import random
 import string
@@ -241,11 +242,18 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         uid = request['uid']
 
                         playerDB.clearMinecraftKeyViaUID(uid)
+                        
 
-                        #firehoseClient = boto3.client('firehose', region_name='us-east-1')
-                        #returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
+                        response['message'] = 'Will return stream {} and minecraft key for user {}'.format(streamName, uid)
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
 
-                        response['message'] = 'Returned stream {} and minecraft key for user {}'.format(streamName, uid)
+                        # TODO manage stale streams in another server
+                        time.sleep(10) 
+                        newSteamName = playerDB.getFirehoseStreamNameViaUID(request['uid'])
+                        if streamName == newSteamName:
+                            firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                            returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
+
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs both <uid> and <key>'
