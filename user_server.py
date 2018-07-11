@@ -87,6 +87,7 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
 
     playerDB.clearFirehoseStreamNameViaUID(uid)
     print("Stream version is now " +  newVersionID)
+    return newVersionID
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -411,12 +412,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     streamName = request['stream_name']
                     firehoseClient = boto3.client('firehose', region_name='us-east-1')
 
-                    returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
+                    versionID = returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
 
-                    response['message'] = "Stream " + streamName + " returned sucessfully"
+                    response['message'] = 'Stream ' + streamName + ' v' + versionID + ' returned sucessfully'
                 else:
                     response['error'] = True
-                    response['message'] = "Stream name or uid not provided"
+                    response['message'] = 'Stream name or uid not provided'
 
 
 
