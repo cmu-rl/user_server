@@ -74,7 +74,7 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
         return None
     elif status != 'ACTIVE':
         print("Stream not active! Status is " +  status)
-        playerDB.returnFirehoseStream(streamName, versionID, outdated = True)
+        playerDB.returnFirehoseStream(streamName, versionID, outdated = False)
         return versionID
 
     firehoseClient.update_destination(
@@ -88,17 +88,18 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
             }
         })
     # Return key to pool
+
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
-    print("Status after update: ")
-    print(streamStatus)
     newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
+    
     if (versionID == newVersionID):
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
     else:
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
 
-    playerDB.clearFirehoseStreamNameViaUID(uid)
-    print("Stream version is now " +  newVersionID)
+    print("Status after update: ")
+    print(streamStatus)
+
     return newVersionID
 
 class MyUDPHandler(socketserver.BaseRequestHandler):

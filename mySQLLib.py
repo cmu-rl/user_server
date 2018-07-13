@@ -298,9 +298,9 @@ class mySQLLib:
             cur= self.conn.cursor()
             timeStr = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             if outdated:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,name,timeStr))
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,timeStr, name))
             else:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,name,timeStr))
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,timeStr, name))
  
             self.conn.commit()
             cur.close()
