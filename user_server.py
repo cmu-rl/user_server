@@ -55,6 +55,8 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     # TODO Validate stream is checked out
 
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+    print("Status before update: ")
+    print(streamStatus)
     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
     destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
     currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
@@ -79,6 +81,8 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
         })
     # Return key to pool
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+    print("Status after update: ")
+    print(streamStatus)
     newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
     if (versionID == newVersionID):
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
