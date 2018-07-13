@@ -271,7 +271,7 @@ class mySQLLib:
             cur= self.conn.cursor()
 
             dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
-            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < '%s'",(dateTimeStr))
+            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < \"s\"",(dateTimeStr))
             name = cur.fetchone()
 
             if name is None:
