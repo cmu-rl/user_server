@@ -35,7 +35,7 @@ def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
                 'BucketARN': bucketARN,
                 'BufferingHints': {
                     'SizeInMBs': 128,
-                    'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                    'IntervalInSeconds': 60 # TODO set to 900 for deploy MUST update minDelay in mysqllib!
                 }
             })
     except Exception as E:
@@ -61,6 +61,7 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
     print("Status before update: ")
     print(streamStatus)
+    status = streamStatus['DeliveryStreamDescription']['DeliveryStreamStatus']
     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
     destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
     currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
@@ -68,10 +69,13 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
 
     if (currentStreamVersion is None or versionID != currentStreamVersion):
         print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
-        # response['error'] = True
-        # response['message'] = "Stream name is invalid"
-        # socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-        # return
+        return None
+    elif status is None:
+        return None
+    elif status != 'ACTIVE':
+        print("Stream not active! Status is " +  status)
+        playerDB.returnFirehoseStream(streamName, versionID, outdated = True)
+        return versionID
 
     firehoseClient.update_destination(
         DeliveryStreamName=streamName,
@@ -91,7 +95,7 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     if (versionID == newVersionID):
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
     else:
-        playerDB.returnFirehoseStream(streamName,newVersionID, outdated = False)
+        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
 
     playerDB.clearFirehoseStreamNameViaUID(uid)
     print("Stream version is now " +  newVersionID)
@@ -252,14 +256,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                         playerDB.clearMinecraftKeyViaUID(uid)
                         
-
-                        response['message'] = 'Will return stream {} and minecraft key for user {}'.format(streamName, uid)
+                        response['message'] = 'Will try to return stream {} and minecraft key for user {}'.format(streamName, uid)
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
 
                         # TODO manage stale streams in another server
                         time.sleep(10) 
                         newSteamName = playerDB.getFirehoseStreamNameViaUID(request['uid'])
-                        if streamName == newSteamName:
+                        if streamName == newSteamName and not streamName is None:
                             firehoseClient = boto3.client('firehose', region_name='us-east-1')
                             returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
 
@@ -422,7 +425,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     versionID = returnFirehoseStream(playerDB, firehoseClient, streamName, uid)
 
-                    response['message'] = 'Stream ' + streamName + ' v' + versionID + ' returned sucessfully'
+                    if versionID is None:
+                        response['error'] = True
+                        response['message'] = 'Was not able to properly return firehose stream ' + streamName
+                    else:
+                        response['message'] = 'Stream ' + streamName + ' v' + versionID + ' returned sucessfully'
                 else:
                     response['error'] = True
                     response['message'] = 'Stream name or uid not provided'

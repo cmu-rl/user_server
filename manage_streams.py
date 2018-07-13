@@ -10,7 +10,7 @@ firehoseClient = boto3.client('firehose', region_name='us-east-1')
 
 
 for streamName in streams:
-    if '72' in streamName:
+    if 'player_stream' in streamName:
         streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
         versionID = streamStatus['DeliveryStreamDescription']['VersionId']
         print ("Deleting stream: " + streamName + ' v' + str(versionID))

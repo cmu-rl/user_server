@@ -20,6 +20,8 @@ class mySQLLib:
     dbServer = 'cmu-rl.c2gld0sydy91.us-east-1.rds.amazonaws.com'
     dbPort = 3306
 
+    minDelta = datetime.timedelta(minutes = 10)
+
     ## The constructor
     def __init__(self):
         pass
@@ -247,7 +249,10 @@ class mySQLLib:
             pass
         else:
             cur = self.conn.cursor()
-            cur.execute("INSERT INTO stream_table (streamName, streamVersion, inUse) VALUES(%s,%s,%s)",(name, version, inUse,))
+
+            dateTimeStr = (datetime.datetime.utcnow() - self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            
+            cur.execute("INSERT INTO stream_table (streamName, streamVersion, inUse, lastReturned) VALUES(%s,%s,%s,%s)",(name, version, inUse, dateTimeStr))
             self.conn.commit()
 
             if not uid is None:
@@ -263,12 +268,11 @@ class mySQLLib:
             # error
             pass
         else:
-            # TODO add uid logging (maybe)
             cur= self.conn.cursor()
-            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0")
-            name = cur.fetchone()
 
-            
+            dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < '%s'",(dateTimeStr))
+            name = cur.fetchone()
 
             if name is None:
                 return None
@@ -286,16 +290,18 @@ class mySQLLib:
     # Streams must be versioned correctly! You must not add stream to pool until
     # stream version matches that returnd by the changeStream function (if called)
     # name must be unique
-    def returnFirehoseStream(self, name, version, outdated = False):
+    def returnFirehoseStream(self, name, version, outdated=False):
         if self.conn is None:
             # error
             pass
         else:
             cur= self.conn.cursor()
+            timeStr = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             if outdated:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s' WHERE streamName='%s'" % (version,name))
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,name,timeStr))
             else:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s' WHERE streamName='%s'" % (version,name))
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,name,timeStr))
+ 
             self.conn.commit()
             cur.close()
 
