@@ -52,6 +52,10 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     if False:
         return
 
+    if streamName is None:
+        print("StreamName is none!")
+        return
+
     # TODO Validate stream is checked out
 
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
