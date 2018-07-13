@@ -63,7 +63,6 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     print(streamStatus)
     status = streamStatus['DeliveryStreamDescription']['DeliveryStreamStatus']
     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
-    destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
     currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
     print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
 
@@ -74,6 +73,34 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
         return None
     elif status != 'ACTIVE':
         print("Stream not active! Status is " +  status)
+        playerDB.returnFirehoseStream(streamName, versionID, outdated = False)
+        return versionID
+    
+    playerDB.returnFirehoseStream(streamName, versionID, outdated = True)
+
+    return versionID
+
+# Update an outdated firehose stream that has been dormate long enough for its buffer to be flushed
+def updateFirehoseStream(playerDB, firehoseClient, streamName):
+    streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+    status = streamStatus['DeliveryStreamDescription']['DeliveryStreamStatus']
+    versionID = streamStatus['DeliveryStreamDescription']['VersionId']
+    destinationId = streamStatus['DeliveryStreamDescription']['Destinations'][0]['DestinationId']
+    currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
+
+    # #TODO remove debug
+    # print("Updating stream")
+    # print(streamStatus)
+    # print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
+
+    if (currentStreamVersion is None or versionID != currentStreamVersion):
+        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
+        return None
+    elif status is None:
+        return None
+    elif status != 'ACTIVE':
+        print("Stream not active! Status is " +  status)
+        # Any previous owner could not have written records to an inactive stream - safe to mark uptodate
         playerDB.returnFirehoseStream(streamName, versionID, outdated = False)
         return versionID
 
@@ -92,16 +119,20 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
     newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
     
+    for _ in range(10):
+        if (versionID != newVersionID):
+            playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
+            return
+        else:
+            streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
+            newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
+            time.sleep(1)
+
     if (versionID == newVersionID):
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
     else:
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
-
-    print("Status after update: ")
-    print(streamStatus)
-
-    return newVersionID
-
+        
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
@@ -361,11 +392,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             return
                     else:
                         print('error retreving status for user')
-
-                    # Get key from pool
-                    streamName = playerDB.getFirehoseStream(uid)
-                    if not streamName is None:
-                        response['stream_name'] = streamName
                 
                     # Get Session Token via AssumeRole
                     sts = boto3.client('sts')
@@ -380,7 +406,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     credentials = role['Credentials']
 
-                    # TODO if there was an error creating sesion credentials give the stream back
+                    # Get key from pool
+                    streamName = playerDB.getFirehoseStream(uid)
+                    if not streamName is None:
+                        response['stream_name'] = streamName
 
                     # If we failed to find a stream in the pool open a new FireHose Stream
                     if not 'stream_name' in response:
@@ -388,14 +417,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
                         response['stream_name'] = crateFirehoseStream(playerDB, firehoseClient,inUse = True, uid = uid)
 
-
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
                     response['session_token'] = credentials['SessionToken']
-                    #TODO serialize expiriation object (below)
-                    #response['expiration'] = credentials['Expiration']
 
-                    # Record stream and session id in database and send to player
+                    # Record stream and session id in database and send to player right away
                     playerDB.setFirehoseCredentialsViaUID(
                         uid, 
                         response['stream_name'],
@@ -403,6 +429,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['secret_key'], 
                         response['session_token'])
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+
+                    # Ask for an outdated stream and try update it
+                    outOfDate = playerDB.getOutOfDateFirehoseStream()
+                    if not outOfDate is None:
+                        firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                        updateFirehoseStream(playerDB, firehoseClient, outOfDate)
 
                     # Expand the pool if below the minimum size
                     if playerDB.getFirehoseStreamCount() < FIREHOSE_STREAM_MIN_AVAILABLE:

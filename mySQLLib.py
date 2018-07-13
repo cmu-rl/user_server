@@ -271,10 +271,11 @@ class mySQLLib:
             cur= self.conn.cursor()
 
             dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
-            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < \"s\"",(dateTimeStr))
+            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < '%s'"%(dateTimeStr))
             name = cur.fetchone()
 
             if name is None:
+                print('Found no streams returned before ' + dateTimeStr)
                 return None
             else:
                 # BAH testing 
@@ -284,6 +285,23 @@ class mySQLLib:
                 cur.execute("UPDATE user_table SET firehoseStreamName='%s' WHERE uid='%s'" % (name[0],uid))
                 self.conn.commit()
                 cur.close()
+                return name[0]
+
+    def getOutOfDateFirehoseStream(self):
+        if self.conn is None:
+            # error
+            pass
+        else:
+            cur= self.conn.cursor()
+
+            dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=1 AND lastReturned < '%s'"%(dateTimeStr))
+            name = cur.fetchone()
+
+            if name is None:
+                print('Found no out of date streams that were returned before ' + dateTimeStr)
+                return None
+            else:
                 return name[0]
 
     # Takes a stream name that has been configured and puts it back in the pool
@@ -296,11 +314,12 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            timeStr = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            
             if outdated:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,timeStr, name))
+                timeStr = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=1,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version, timeStr, name))
             else:
-                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s',lastReturned='%s' WHERE streamName='%s'" % (version,timeStr, name))
+                cur.execute ("UPDATE stream_table SET inUse=0,outdated=0,streamVersion='%s' WHERE streamName='%s'" % (version, name))
  
             self.conn.commit()
             cur.close()
@@ -311,7 +330,7 @@ class mySQLLib:
             pass
         else:
             cur= self.conn.cursor()
-            cur.execute ("SELECT COUNT(inUse) from stream_table WHERE inUse=0")
+            cur.execute ("SELECT COUNT(inUse) from stream_table WHERE inUse=0 AND outdated=0")
             (countNotInUse,) = cur.fetchone()
             cur.close()
             return countNotInUse
