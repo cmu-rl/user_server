@@ -436,6 +436,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
                         updateFirehoseStream(playerDB, firehoseClient, outOfDate)
 
+                    # Ask for another outdated stream and try update it
+                    outOfDate = playerDB.getOutOfDateFirehoseStream()
+                    if not outOfDate is None:
+                        firehoseClient = boto3.client('firehose', region_name='us-east-1')
+                        updateFirehoseStream(playerDB, firehoseClient, outOfDate)
+
                     # Expand the pool if below the minimum size
                     if playerDB.getFirehoseStreamCount() < FIREHOSE_STREAM_MIN_AVAILABLE:
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
