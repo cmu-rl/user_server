@@ -250,7 +250,10 @@ class mySQLLib:
         else:
             cur = self.conn.cursor()
 
-            dateTimeStr = (datetime.datetime.utcnow() - self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            if uid is None:
+                dateTimeStr = (datetime.datetime.utcnow() - self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                dateTimeStr = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             
             cur.execute("INSERT INTO stream_table (streamName, streamVersion, inUse, lastReturned) VALUES(%s,%s,%s,%s)",(name, version, inUse, dateTimeStr))
             self.conn.commit()
@@ -270,7 +273,7 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
 
-            dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            dateTimeStr = (datetime.datetime.utcnow() - self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
             cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=0 AND lastReturned < '%s'"%(dateTimeStr))
             name = cur.fetchone()
 
@@ -294,7 +297,7 @@ class mySQLLib:
         else:
             cur= self.conn.cursor()
 
-            dateTimeStr = (datetime.datetime.utcnow() + self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
+            dateTimeStr = (datetime.datetime.utcnow() - self.minDelta).strftime('%Y-%m-%d %H:%M:%S')
             cur.execute ("SELECT streamName FROM stream_table WHERE inUse=0 AND outdated=1 AND lastReturned < '%s'"%(dateTimeStr))
             name = cur.fetchone()
 
