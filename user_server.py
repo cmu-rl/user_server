@@ -377,6 +377,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['minecraft_key'] = minecraft_key
                     else:
                         print('User posesed out of date client mod!')
+                        response['error'] = True
                         response['message'] = 'Failed, recording client out of date'
                         response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
 
@@ -416,8 +417,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # Ensure recording version is up-to-date
                     if not ('version' in request and checkClientRecorderVersion(request['version'])):
                         print('User posesed out of date client mod!')
+                        response['error'] = True
                         response['message'] = 'Failed, recording client out of date'
-                        response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
 
