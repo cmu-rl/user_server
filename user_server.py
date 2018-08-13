@@ -1,5 +1,6 @@
 #!/usr/bin/python3.6
 import boto3
+import re
 import time
 import json
 import random
@@ -132,7 +133,13 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
     else:
         playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
-        
+
+
+def checkClientRecorderVersion(version):
+    versionTokens = re.split('[, \-]+',str)
+    tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
+    return versionTokens[tokenDict['build_number']] > 118
+   
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
@@ -358,10 +365,23 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             return
                     else:
                         print('error retreving status for user')
+                        response['error'] = True
+                        response['message'] = 'Failed, cmd not well formed'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
 
-                    minecraft_key = generateSecureString(45)
-                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
-                    response['minecraft_key'] = minecraft_key
+                    # Ensure recording version is up-to-date
+                    if 'version' in request and checkClientRecorderVersion(request['version']):
+                        minecraft_key = generateSecureString(45)
+                        playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                        response['minecraft_key'] = minecraft_key
+                    else:
+                        print('User posesed out of date client mod!')
+                        response['message'] = 'Failed, recording client out of date'
+                        response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
+
+
+                    
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs valid uid'
@@ -392,6 +412,15 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             return
                     else:
                         print('error retreving status for user')
+
+                    # Ensure recording version is up-to-date
+                    if not ('version' in request and checkClientRecorderVersion(request['version'])):
+                        print('User posesed out of date client mod!')
+                        response['message'] = 'Failed, recording client out of date'
+                        response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+
                 
                     # Get Session Token via AssumeRole
                     sts = boto3.client('sts')
