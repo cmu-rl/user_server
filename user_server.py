@@ -376,7 +376,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     elif 'version' in request:
                         print('Version did NOT pass check version')
                         print(request['version'])
-                    else
+                    else:
                         print('User did NOT send version')
                         # response['error'] = True
                         # response['message'] = 'Failed, recording client out of date'
@@ -431,9 +431,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     elif 'version' in request:
                         print('Version did NOT pass check version')
                         print(request['version'])
-                    else
+                    else:
                         print('User did NOT send version')
-                        
+
                     # Ensure recording version is up-to-date
                     # if not ('version' in request and checkClientRecorderVersion(request['version'])):
                     #     print('User posesed out of date client mod!')
