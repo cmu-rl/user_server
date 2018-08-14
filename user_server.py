@@ -347,24 +347,23 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     status = playerDB.getStatus(uid)
 
-                    if 'invalid' in status:
-                        if status['invalid']:
-                            # UID is invalid - TODO don't respond 
-                            response['error'] = True
-                            response['message'] = 'Failed, uid is invalid'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif status['banned']:
-                            response['error'] = False
-                            response['message'] = 'User is banned from play'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif status['removed']:
-                            response['error'] = False
-                            response['message'] = 'User has been removed from the database'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                    else:
+                    if 'invalid' in status and status['invalid']:
+                        # UID is invalid - TODO don't respond 
+                        response['error'] = True
+                        response['message'] = 'Failed, uid is invalid'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif 'banned' in status and status['banned']:
+                        response['error'] = False
+                        response['message'] = 'User is banned from play'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif 'removed' in status and status['removed']:
+                        response['error'] = False
+                        response['message'] = 'User does not exist'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif not('invalid' in status and 'banned' in status and 'removed' in status):
                         print('error retreving status for user')
                         response['error'] = True
                         response['message'] = 'Failed, cmd not well formed'
@@ -372,15 +371,21 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         return
 
                     # Ensure recording version is up-to-date
-                    # if 'version' in request and checkClientRecorderVersion(request['version']):
+                    if 'version' in request and checkClientRecorderVersion(request['version']):
+                        print('User\'s mod is up to date!')
+                    elif 'version' in request:
+                        print('Version did NOT pass check version')
+                        print(request['version'])
+                    else
+                        print('User did NOT send version')
+                        # response['error'] = True
+                        # response['message'] = 'Failed, recording client out of date'
+                        # response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
+
+                    # TODO do not do this for out of date versions
                     minecraft_key = generateSecureString(45)
                     playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
                     response['minecraft_key'] = minecraft_key
-                    # else:
-                    #     print('User posesed out of date client mod!')
-                    #     response['error'] = True
-                    #     response['message'] = 'Failed, recording client out of date'
-                    #     response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
 
 
                     
@@ -395,26 +400,40 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     status = playerDB.getStatus(uid)
 
-                    if 'invalid' in status:
-                        if status['invalid']:
-                            # UID is invalid - TODO don't respond 
-                            response['error'] = True
-                            response['message'] = 'Failed, uid is invalid'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif status['banned']:
-                            response['error'] = False
-                            response['message'] = 'User is banned from play'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                        elif status['removed']:
-                            response['error'] = False
-                            response['message'] = 'User has been removed from the database'
-                            socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                            return
-                    else:
+                    if 'invalid' in status and status['invalid']:
+                        # UID is invalid - TODO don't respond 
+                        response['error'] = True
+                        response['message'] = 'Failed, uid is invalid'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif 'banned' in status and status['banned']:
+                        response['error'] = False
+                        response['message'] = 'User is banned from play'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif 'removed' in status and status['removed']:
+                        response['error'] = False
+                        response['message'] = 'User does not exist'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
+                    elif not('invalid' in status and 'banned' in status and 'removed' in status):
                         print('error retreving status for user')
+                        response['error'] = True
+                        response['message'] = 'Failed, status could not be returned'
+                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                        return
 
+
+
+                    # Ensure recording version is up-to-date
+                    if 'version' in request and checkClientRecorderVersion(request['version']):
+                        print('User\'s mod is up to date!')
+                    elif 'version' in request:
+                        print('Version did NOT pass check version')
+                        print(request['version'])
+                    else
+                        print('User did NOT send version')
+                        
                     # Ensure recording version is up-to-date
                     # if not ('version' in request and checkClientRecorderVersion(request['version'])):
                     #     print('User posesed out of date client mod!')
