@@ -136,9 +136,10 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
 
 
 def checkClientRecorderVersion(version):
-    versionTokens = re.split('[, \-]+',str)
-    tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
-    return versionTokens[tokenDict['build_number']] > 118
+    return True
+    # versionTokens = re.split('[, \-]+',str)
+    # tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
+    # return versionTokens[tokenDict['build_number']] >= 118
    
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
@@ -371,15 +372,15 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         return
 
                     # Ensure recording version is up-to-date
-                    if 'version' in request and checkClientRecorderVersion(request['version']):
-                        minecraft_key = generateSecureString(45)
-                        playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
-                        response['minecraft_key'] = minecraft_key
-                    else:
-                        print('User posesed out of date client mod!')
-                        response['error'] = True
-                        response['message'] = 'Failed, recording client out of date'
-                        response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
+                    # if 'version' in request and checkClientRecorderVersion(request['version']):
+                    minecraft_key = generateSecureString(45)
+                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                    response['minecraft_key'] = minecraft_key
+                    # else:
+                    #     print('User posesed out of date client mod!')
+                    #     response['error'] = True
+                    #     response['message'] = 'Failed, recording client out of date'
+                    #     response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
 
 
                     
@@ -415,12 +416,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         print('error retreving status for user')
 
                     # Ensure recording version is up-to-date
-                    if not ('version' in request and checkClientRecorderVersion(request['version'])):
-                        print('User posesed out of date client mod!')
-                        response['error'] = True
-                        response['message'] = 'Failed, recording client out of date'
-                        socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
-                        return
+                    # if not ('version' in request and checkClientRecorderVersion(request['version'])):
+                    #     print('User posesed out of date client mod!')
+                    #     response['error'] = True
+                    #     response['message'] = 'Failed, recording client out of date'
+                    #     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
+                    #     return
 
                 
                     # Get Session Token via AssumeRole
