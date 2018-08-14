@@ -166,6 +166,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             playerDB = mySQLLib.mySQLLib()
             playerDB.Open("user_database")
 
+            # Log the task
+            print (json.dumps(request, indent=4, sort_keys=True))
 
             ## If there was no error in executing the command the packet will be sent at the end
             ## if an error was encountered set 'error' = true, send the packet, and return immediately
