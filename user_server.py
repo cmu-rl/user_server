@@ -450,7 +450,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     role = {}
                     try:
                         sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
-                        role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName)
+                        role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName, DurationSeconds=43140)
                     except sts.exceptions.ClientError as e:
                         print('Error assuming role!')
                         playerDB.returnFirehoseStream(streamName, 'err')
