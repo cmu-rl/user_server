@@ -136,13 +136,13 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
 
 
 def checkClientRecorderVersion(version):
-    
-    versionTokens = re.split('[, \-]+',str)
-    tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
-    print ("User sent: ", version, "\nParsed ", tokenDict)
     try:
+         versionTokens = re.split('[, \-]+',str)
+        tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
+        print ("User sent: ", version, "\nParsed ", tokenDict)
         return versionTokens[tokenDict['build_number']] >= 150
-    except:
+    except Exception e:
+        print(e)
         return True
    
 class MyUDPHandler(socketserver.BaseRequestHandler):
