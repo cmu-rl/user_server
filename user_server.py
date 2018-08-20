@@ -141,7 +141,7 @@ def checkClientRecorderVersion(version):
         tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
         print ("User sent: ", version, "\nParsed ", tokenDict)
         return versionTokens[tokenDict['build_number']] >= 150
-    except Exception e:
+    except Exception as e:
         print(e)
         return True
    
