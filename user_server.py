@@ -386,9 +386,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['minecraft_key'] = 'RECORDING_CLIENT_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
                     else:
                         print('User did NOT send version')
-                        minecraft_key = generateSecureString(45)
-                        playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
-                        response['minecraft_key'] = minecraft_key
+                        response['error'] = True
+                        response['message'] = 'Failed, recording client out of date'
+                        response['minecraft_key'] = 'RECORDING_CLIENT_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
                         
 
                     # # TODO do not do this for out of date versions
