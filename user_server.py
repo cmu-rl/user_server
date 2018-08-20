@@ -143,6 +143,7 @@ def checkClientRecorderVersion(version):
         return versionTokens[tokenDict['build_number']] >= 150
     except Exception as e:
         print(e)
+        #TODO return false in this case
         return True
    
 class MyUDPHandler(socketserver.BaseRequestHandler):
