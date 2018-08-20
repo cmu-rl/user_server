@@ -375,19 +375,26 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # Ensure recording version is up-to-date
                     if 'version' in request and checkClientRecorderVersion(request['version']):
                         print('User\'s mod is up to date!')
+                        minecraft_key = generateSecureString(45)
+                        playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                        response['minecraft_key'] = minecraft_key
                     elif 'version' in request:
                         print('Version did NOT pass check version')
                         print(request['version'])
+                        response['error'] = True
+                        response['message'] = 'Failed, recording client out of date'
+                        response['minecraft_key'] = 'RECORDING_CLIENT_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
                     else:
                         print('User did NOT send version')
-                        # response['error'] = True
-                        # response['message'] = 'Failed, recording client out of date'
-                        # response['minecraft_key'] = 'RECORDING_CLINET_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
+                        minecraft_key = generateSecureString(45)
+                        playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                        response['minecraft_key'] = minecraft_key
+                        
 
-                    # TODO do not do this for out of date versions
-                    minecraft_key = generateSecureString(45)
-                    playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
-                    response['minecraft_key'] = minecraft_key
+                    # # TODO do not do this for out of date versions
+                    # minecraft_key = generateSecureString(45)
+                    # playerDB.setMinecraftKeyViaUID(request['uid'], minecraft_key)
+                    # response['minecraft_key'] = minecraft_key
 
 
                     
