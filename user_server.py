@@ -136,7 +136,7 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
 
 
 def checkClientRecorderVersion(version):
-    return True
+    return False
     # versionTokens = re.split('[, \-]+',str)
     # tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
     # return versionTokens[tokenDict['build_number']] >= 118
