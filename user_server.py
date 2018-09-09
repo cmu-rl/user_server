@@ -25,7 +25,7 @@ def generateSecureFruitString():
 def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
     # Role for firehose needs to have access to S3 - make policy that includes this
     roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-    bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
+    bucketARN = 'arn:aws:s3:::test-data-action-recorder'
 
     firehoseStreamName = 'player_stream_' + generateSecureFruitString()   
     try:
@@ -270,7 +270,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'validate_minecraft_key':
 
                 if 'uid' in request and 'minecraft_key' in request:
-                    
+                        
 
                     try:
                         mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
