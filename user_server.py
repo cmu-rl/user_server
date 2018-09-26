@@ -352,7 +352,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'Could not find user by uid'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    else:       
+                    else if 'invalid' in status:       
+                        response['command_status'] = 'Success'
+                        response['message'] = 'Status was invalid'
+                    else:
                         response['command_status'] = 'Success'
                         response['message'] = 'Status returned sucessfully'
                 else:
