@@ -25,7 +25,7 @@ def generateSecureFruitString():
 def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
     # Role for firehose needs to have access to S3 - make policy that includes this
     roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-    bucketARN = 'arn:aws:s3:::test-data-action-recorder'
+    bucketARN = 'arn:aws:s3:::pizza-party'
 
     firehoseStreamName = 'player_stream_' + generateSecureFruitString()   
     try:
@@ -140,7 +140,7 @@ def checkClientRecorderVersion(version):
         versionTokens = re.split('[, \-]+',str)
         tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
         print ("User sent: ", version, "\nParsed ", tokenDict)
-        return versionTokens[tokenDict['build_number']] >= 150
+        return versionTokens[tokenDict['build_number']] >= 195
     except Exception as e:
         print(e)
         #TODO return false in this case
