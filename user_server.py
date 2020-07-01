@@ -25,7 +25,7 @@ def generateSecureFruitString():
 def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
     # Role for firehose needs to have access to S3 - make policy that includes this
     roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
-    bucketARN = 'arn:aws:s3:::deepmine-alpha-data'
+    bucketARN = 'arn:aws:s3:::pizza-party'
 
     firehoseStreamName = 'player_stream_' + generateSecureFruitString()   
     try:
@@ -140,7 +140,7 @@ def checkClientRecorderVersion(version):
         versionTokens = re.split('[, \-]+',str)
         tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
         print ("User sent: ", version, "\nParsed ", tokenDict)
-        return versionTokens[tokenDict['build_number']] >= 150
+        return versionTokens[tokenDict['build_number']] >= 195
     except Exception as e:
         print(e)
         #TODO return false in this case
@@ -270,7 +270,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'validate_minecraft_key':
 
                 if 'uid' in request and 'minecraft_key' in request:
-                    
+                        
 
                     try:
                         mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
@@ -352,7 +352,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'Could not find user by uid'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    else:       
+
+                    if 'invalid' in status:       
+                        response['command_status'] = 'Invalid'
+                        response['message'] = 'Status was invalid'
+                    else:
                         response['command_status'] = 'Success'
                         response['message'] = 'Status returned sucessfully'
                 else:
@@ -489,7 +493,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName, DurationSeconds=43140)
                     except sts.exceptions.ClientError as e:
                         print('Error assuming role!')
-                        playerDB.returnFirehoseStream(streamName, 'err')
                         return
 
                     credentials = role['Credentials']

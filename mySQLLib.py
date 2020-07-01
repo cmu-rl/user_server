@@ -15,9 +15,9 @@ import mysql.connector
 # 
 class mySQLLib:
 
-    dbUser ='alpha'
-    dbPasswd = 'alphapassword'
-    dbServer = 'cmu-rl.c2gld0sydy91.us-east-1.rds.amazonaws.com'
+    dbUser ='herobraine'
+    dbPasswd = 'herobrainepassword'
+    dbServer = 'user.cjgktk9jz3a9.us-east-1.rds.amazonaws.com'
     dbPort = 3306
 
     minDelta = datetime.timedelta(minutes = 10)
