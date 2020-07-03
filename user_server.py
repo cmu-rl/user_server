@@ -13,40 +13,45 @@ import socketserver
 
 FIREHOSE_STREAM_MIN_AVAILABLE = 30
 
+
 def generateUserID(minecraftUUID):
     return hashlib.md5(minecraftUUID.encode('utf-8')).hexdigest()
+
 
 def generateSecureString(len):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(len))
 
+
 def generateSecureFruitString():
     return hriLib.getString()
 
-def crateFirehoseStream(playerDB, firehoseClient, inUse = False, uid = None):
+
+def crateFirehoseStream(playerDB, firehoseClient, inUse=False, uid=None):
     # Role for firehose needs to have access to S3 - make policy that includes this
     roleARN =   'arn:aws:iam::215821069683:role/firehose_delivery_role'
     bucketARN = 'arn:aws:s3:::pizza-party'
 
-    firehoseStreamName = 'player_stream_' + generateSecureFruitString()   
+    firehoseStreamName = 'player_stream_' + generateSecureFruitString()
     try:
         createdFirehose = firehoseClient.create_delivery_stream(
-            DeliveryStreamName = firehoseStreamName,
-            S3DestinationConfiguration = {
+            DeliveryStreamName=firehoseStreamName,
+            S3DestinationConfiguration={
                 'RoleARN': roleARN,
                 'BucketARN': bucketARN,
                 'BufferingHints': {
                     'SizeInMBs': 128,
-                    'IntervalInSeconds': 60 # TODO set to 900 for deploy MUST update minDelay in mysqllib!
+                    'IntervalInSeconds': 60  # TODO set to 900 for deploy MUST update minDelay in mysqllib!
                 }
             })
     except Exception as E:
-        print (E)
+        print(E)
         return None
     else:
         streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=firehoseStreamName)
         versionID = streamStatus['DeliveryStreamDescription']['VersionId']
-        playerDB.addFirehoseStream(firehoseStreamName,versionID, inUse=inUse, uid=uid)
+        playerDB.addFirehoseStream(firehoseStreamName, versionID, inUse=inUse, uid=uid)
         return firehoseStreamName
+
 
 def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     # TODO Validate UID
@@ -65,21 +70,22 @@ def returnFirehoseStream(playerDB, firehoseClient, streamName, uid):
     status = streamStatus['DeliveryStreamDescription']['DeliveryStreamStatus']
     versionID = streamStatus['DeliveryStreamDescription']['VersionId']
     currentStreamVersion = playerDB.getFirehoseStreamVersion(streamName)
-    print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
+    print("Stream version is " + versionID + " and database says " + currentStreamVersion)
 
     if (currentStreamVersion is None or versionID != currentStreamVersion):
-        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
+        print("Stream version is inconsistent! Actual is " + versionID + " but database says " + currentStreamVersion)
         return None
     elif status is None:
         return None
     elif status != 'ACTIVE':
-        print("Stream not active! Status is " +  status)
-        playerDB.returnFirehoseStream(streamName, versionID, outdated = False)
+        print("Stream not active! Status is " + status)
+        playerDB.returnFirehoseStream(streamName, versionID, outdated=False)
         return versionID
-    
-    playerDB.returnFirehoseStream(streamName, versionID, outdated = True)
+
+    playerDB.returnFirehoseStream(streamName, versionID, outdated=True)
 
     return versionID
+
 
 # Update an outdated firehose stream that has been dormate long enough for its buffer to be flushed
 def updateFirehoseStream(playerDB, firehoseClient, streamName):
@@ -95,34 +101,34 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
     # print("Stream version is " +  versionID + " and database says " + currentStreamVersion)
 
     if (currentStreamVersion is None or versionID != currentStreamVersion):
-        print("Stream version is inconsistent! Actual is " +  versionID + " but database says " + currentStreamVersion)
+        print("Stream version is inconsistent! Actual is " + versionID + " but database says " + currentStreamVersion)
         return None
     elif status is None:
         return None
     elif status != 'ACTIVE':
-        print("Stream not active! Status is " +  status)
+        print("Stream not active! Status is " + status)
         # Any previous owner could not have written records to an inactive stream - safe to mark uptodate
-        playerDB.returnFirehoseStream(streamName, versionID, outdated = False)
+        playerDB.returnFirehoseStream(streamName, versionID, outdated=False)
         return versionID
 
     firehoseClient.update_destination(
         DeliveryStreamName=streamName,
-        CurrentDeliveryStreamVersionId = versionID,
-        DestinationId = destinationId,
-        S3DestinationUpdate = {
+        CurrentDeliveryStreamVersionId=versionID,
+        DestinationId=destinationId,
+        S3DestinationUpdate={
             'BufferingHints': {
                 'SizeInMBs': 128,
-                'IntervalInSeconds': 60 # TODO set to 900 for deploy
+                'IntervalInSeconds': 60  # TODO set to 900 for deploy
             }
         })
     # Return key to pool
 
     streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
     newVersionID = streamStatus['DeliveryStreamDescription']['VersionId']
-    
+
     for _ in range(10):
         if (versionID != newVersionID):
-            playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
+            playerDB.returnFirehoseStream(streamName, newVersionID, outdated=False)
             return
         else:
             streamStatus = firehoseClient.describe_delivery_stream(DeliveryStreamName=streamName)
@@ -130,22 +136,23 @@ def updateFirehoseStream(playerDB, firehoseClient, streamName):
             time.sleep(1)
 
     if (versionID == newVersionID):
-        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = True)
+        playerDB.returnFirehoseStream(streamName, newVersionID, outdated=True)
     else:
-        playerDB.returnFirehoseStream(streamName, newVersionID, outdated = False)
+        playerDB.returnFirehoseStream(streamName, newVersionID, outdated=False)
 
 
 def checkClientRecorderVersion(version):
     try:
-        versionTokens = re.split('[, \-]+',str)
-        tokenDict = {'repo_name':0,'mc_version':1,'mod_version':2,'build_number':3,'commit_id':4}
-        print ("User sent: ", version, "\nParsed ", tokenDict)
-        return versionTokens[tokenDict['build_number']] >= 195
+        versionTokens = re.split('[, \-]+', str)
+        tokenDict = {'repo_name': 0, 'mc_version': 1, 'mod_version': 2, 'build_number': 3, 'commit_id': 4}
+        print("User sent: ", version, "\nParsed ", tokenDict)
+        return versionTokens[tokenDict['build_number']] >= 230
     except Exception as e:
         print(e)
-        #TODO return false in this case
+        # TODO return false in this case
         return True
-   
+
+
 class MyUDPHandler(socketserver.BaseRequestHandler):
     """
     This class works similar to the TCP handler class, except that
@@ -161,9 +168,9 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         try:
             request = json.loads(data, encoding="utf-8")
         except ValueError as error:
-            #TODO return error
+            # TODO return error
             return
-        
+
         if 'cmd' in request:
             response = {}
             response['timestamp'] = datetime.datetime.now().strftime("%m_%d_%H_%M_%S")
@@ -172,11 +179,11 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             playerDB.Open("user_database")
 
             # Log the task
-            print (json.dumps(request, indent=4, sort_keys=True))
+            print(json.dumps(request, indent=4, sort_keys=True))
 
             ## If there was no error in executing the command the packet will be sent at the end
             ## if an error was encountered set 'error' = true, send the packet, and return immediately
-            
+
             # Form the response
             if request['cmd'] == 'echo':
                 response['cmd'] = request['cmd']
@@ -189,12 +196,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########           Add User          ########  
             elif request['cmd'] == 'add_user':
                 # TODO check if they exist but are 'removed' or 'banned', etc.
-        
+
                 if 'email' in request and 'uid' in request and 'mcusername' in request:
                     try:
-                        unique_elements = playerDB.isUnique( request['email'], request['mcusername'], request['uid'])
+                        unique_elements = playerDB.isUnique(request['email'], request['mcusername'], request['uid'])
                         if not all(unique_elements.values()):
-                            
+
                             # User's info is not unique - return a helpfull message
                             response['unique'] = False
                             status = playerDB.getStatus(request['uid'])
@@ -223,13 +230,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                         # Add the user to the database
                         playerDB.addUser( \
-                        request['email'],
-                        request['mcusername'],
-                        request['uid'])
+                            request['email'],
+                            request['mcusername'],
+                            request['uid'])
 
                         response['error'] = False
-                        #response['uid'] = uid
-                        response['message'] =  'User {} has been successfully added!'.format(request['mcusername'])
+                        # response['uid'] = uid
+                        response['message'] = 'User {} has been successfully added!'.format(request['mcusername'])
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
                     except Exception as e:
@@ -237,8 +244,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = repr(e)
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    
-                else:    
+
+                else:
                     response['error'] = True
                     response['message'] = 'Required fields not populated, must supply email and mcusername'
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
@@ -248,8 +255,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'add_to_queue':
                 # TODO Remove user by marking them as removed (not deleting them)
                 if 'uid' in request:
-                        
-                    #playerDB.deleteUserViaUID(request['uid'])
+
+                    # playerDB.deleteUserViaUID(request['uid'])
                     response['message'] = 'Nothing happend - we this command will be supported at a later date'
                 else:
                     response['error'] = True
@@ -259,8 +266,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'remove_user':
                 # TODO Remove user by marking them as removed (not deleting them)
                 if 'uid' in request:
-                        
-                    #playerDB.deleteUserViaUID(request['uid'])
+
+                    # playerDB.deleteUserViaUID(request['uid'])
                     response['message'] = 'Nothing happend - we this command will be supported at a later date'
                 else:
                     response['error'] = True
@@ -270,7 +277,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             elif request['cmd'] == 'validate_minecraft_key':
 
                 if 'uid' in request and 'minecraft_key' in request:
-                        
+                    
 
                     try:
                         mcKey = playerDB.getMinecraftKeyViaUID(request['uid'])
@@ -279,7 +286,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'Error getting key by uid'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    else: 
+                    else:
                         if not mcKey is None and mcKey == request['minecraft_key']:
                             response['key_is_valid'] = True
                         else:
@@ -302,7 +309,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                             response['message'] = 'User does not exist'
                             socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                             return
-                        elif not('invalid' in status and 'banned' in status and 'removed' in status):
+                        elif not ('invalid' in status and 'banned' in status and 'removed' in status):
                             print('error retreving status for user')
                             response['error'] = True
                             response['message'] = 'Failed, cmd not well formed'
@@ -322,16 +329,17 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'Error getting stream name by uid'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    else: 
+                    else:
                         uid = request['uid']
 
                         playerDB.clearMinecraftKeyViaUID(uid)
-                        
-                        response['message'] = 'Will try to return stream {} and minecraft key for user {}'.format(streamName, uid)
+
+                        response['message'] = 'Will try to return stream {} and minecraft key for user {}'.format(
+                            streamName, uid)
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
 
                         # TODO manage stale streams in another server
-                        time.sleep(10) 
+                        time.sleep(10)
                         newSteamName = playerDB.getFirehoseStreamNameViaUID(request['uid'])
                         if streamName == newSteamName and not streamName is None:
                             firehoseClient = boto3.client('firehose', region_name='us-east-1')
@@ -343,7 +351,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
             ########           Get Status            ########
             elif request['cmd'] == 'get_status':
-                if 'uid' in request: 
+                if 'uid' in request:
                     try:
                         status = playerDB.getStatus(request['uid'])
                         response.update(status)
@@ -353,7 +361,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
 
-                    if 'invalid' in status:       
+                    if 'invalid' in status:
                         response['command_status'] = 'Invalid'
                         response['message'] = 'Status was invalid'
                     else:
@@ -366,8 +374,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
             ########           Change Status        ########
             elif request['cmd'] == 'make_awesome':
                 # TODO Remove user by marking them as removed (not deleting them)
-                if 'uid' in request: 
-                    response['banned'] = False 
+                if 'uid' in request:
+                    response['banned'] = False
                     response['awesome'] = True
                     response['queue_position'] = 120
                     response['message'] = 'Command not supported yet'
@@ -398,7 +406,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'User does not exist'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    elif not('invalid' in status and 'banned' in status and 'removed' in status):
+                    elif not ('invalid' in status and 'banned' in status and 'removed' in status):
                         print('error retreving status for user')
                         response['error'] = True
                         response['message'] = 'Failed, cmd not well formed'
@@ -422,7 +430,6 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['error'] = True
                         response['message'] = 'Failed, recording client out of date'
                         response['minecraft_key'] = 'RECORDING_CLIENT_OUT_OF_DATE_XXXXXXXXXXXXXXXX'
-                        
 
                     # # TODO do not do this for out of date versions
                     # minecraft_key = generateSecureString(45)
@@ -430,7 +437,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     # response['minecraft_key'] = minecraft_key
 
 
-                    
+
                 else:
                     response['error'] = True
                     response['message'] = 'Request needs valid uid'
@@ -458,14 +465,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                         response['message'] = 'User does not exist'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-                    elif not('invalid' in status and 'banned' in status and 'removed' in status):
+                    elif not ('invalid' in status and 'banned' in status and 'removed' in status):
                         print('error retreving status for user')
                         response['error'] = True
                         response['message'] = 'Failed, status could not be returned'
                         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                         return
-
-
 
                     # Ensure recording version is up-to-date
                     if 'version' in request and checkClientRecorderVersion(request['version']):
@@ -484,13 +489,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     #     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
                     #     return
 
-                
                     # Get Session Token via AssumeRole
                     sts = boto3.client('sts')
                     role = {}
                     try:
                         sessionName = str(uid) + datetime.datetime.now().strftime("_%m_%d_%H_%M_%S")
-                        role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer', RoleSessionName=sessionName, DurationSeconds=43140)
+                        role = sts.assume_role(RoleArn='arn:aws:iam::215821069683:role/iam_client_streamer',
+                                               RoleSessionName=sessionName, DurationSeconds=43140)
                     except sts.exceptions.ClientError as e:
                         print('Error assuming role!')
                         return
@@ -506,7 +511,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
                     if not 'stream_name' in response:
                         # Open FireHose Client
                         firehoseClient = boto3.client('firehose', region_name='us-east-1')
-                        response['stream_name'] = crateFirehoseStream(playerDB, firehoseClient,inUse = True, uid = uid)
+                        response['stream_name'] = crateFirehoseStream(playerDB, firehoseClient, inUse=True, uid=uid)
 
                     response['access_key'] = credentials['AccessKeyId']
                     response['secret_key'] = credentials['SecretAccessKey']
@@ -514,10 +519,10 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
                     # Record stream and session id in database and send to player right away
                     playerDB.setFirehoseCredentialsViaUID(
-                        uid, 
+                        uid,
                         response['stream_name'],
-                        response['access_key'], 
-                        response['secret_key'], 
+                        response['access_key'],
+                        response['secret_key'],
                         response['session_token'])
                     socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
 
@@ -586,16 +591,15 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     def handle_error(self, request, client_address):
         data = self.request[0]
         socket = self.request[1]
-        
+
         response = {}
         response['error'] = True
         response['message'] = "Exception processing request " + data
         socket.sendto(bytes(json.dumps(response), "utf-8"), self.client_address)
 
-        print (data)
+        print(data)
         socketserver.ThreadingUDPServer.handle_error(self, request, client_address)
 
-            
 
 if __name__ == "__main__":
     HOST, PORT = "0.0.0.0", 9999
